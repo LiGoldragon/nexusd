@@ -28,8 +28,6 @@
           name = "nexusd";
           packages = [
             pkgs.jujutsu
-            pkgs.pkg-config
-            pkgs.openssl
             toolchain
           ];
         };
