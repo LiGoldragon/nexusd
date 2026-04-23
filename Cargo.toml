@@ -1,0 +1,14 @@
+[package]
+name         = "nexusd"
+version      = "0.1.0"
+edition      = "2024"
+rust-version = "1.85"
+license      = "MIT OR Apache-2.0"
+repository   = "https://github.com/LiGoldragon/nexusd"
+description  = "The sema database daemon — receives nexus messages, applies edits, serves queries"
+
+[dependencies]
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+thiserror = "2"
+ractor = "0.15"
