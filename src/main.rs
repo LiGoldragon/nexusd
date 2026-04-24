@@ -1,9 +1,15 @@
-//! nexusd — the sema database daemon.
+//! nexusd — the nexus-text messenger.
 //!
-//! Accepts nexus messages over a Unix socket (or stdio), parses via
-//! nexus-serde, dispatches to sema operations, responds in nexus.
-//! Ractor-hosted services own the daemon's concurrent state.
+//! Parses nexus messages over a Unix socket (or stdio), forwards
+//! rkyv criome-messages to criomed, relays replies back as nexus
+//! text. Stateless modulo in-flight request correlations — criomed
+//! (guardian of sema-db) and lojix-stored (guardian of lojix-store)
+//! hold the state.
 
-fn main() -> anyhow::Result<()> {
+mod error;
+
+use error::Result;
+
+fn main() -> Result<()> {
     Ok(())
 }
