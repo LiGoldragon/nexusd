@@ -2,71 +2,36 @@
 ;; flow-graph. The first criomed-handled record category per Li
 ;; 2026-04-25.
 ;;
-;; Three kinds: Node (shape + label), Edge (typed arrow with
-;; optional label), Graph (titled container of nodes + edges +
-;; nested subgraphs).
+;; Three kinds: Node (id + label), Edge (from + to with optional
+;; label), Graph (titled container of nodes + edges + nested
+;; subgraphs).
 ;;
-;; This is what Mermaid does, but in fully-typed binary records
-;; criomed validates and stores. Each Assert below is a real
-;; signal frame.
+;; **Logic only, no rendering.** Per Li 2026-04-25: *"the flow
+;; subset is only about representing logic, not concerning itself
+;; with rendering it."* No shape/style/direction fields —
+;; rendering is a separate concern that lives elsewhere if and
+;; when we need it.
+;;
+;; Each Assert below is a real signal frame.
 
 ;; ──────────────── A small architecture diagram ────────────────
 
-;; The three nodes:
-(Assert (Node :slot 100
-              :id "user"
-              :label "User"
-              :shape Round))
-
-(Assert (Node :slot 101
-              :id "nexus"
-              :label "nexus daemon\n(text → signal)"
-              :shape Rect))
-
-(Assert (Node :slot 102
-              :id "criome"
-              :label "criome daemon\n(validator + sema)"
-              :shape Rect))
-
-(Assert (Node :slot 103
-              :id "lojix"
-              :label "lojix daemon\n(forge + store)"
-              :shape Rect))
-
-(Assert (Node :slot 104
-              :id "sema"
-              :label "sema (redb)"
-              :shape Cylinder))
+;; The five nodes:
+(Assert (Node :slot 100 :id "user"   :label "User"))
+(Assert (Node :slot 101 :id "nexus"  :label "nexus daemon (text → signal)"))
+(Assert (Node :slot 102 :id "criome" :label "criome daemon (validator + sema)"))
+(Assert (Node :slot 103 :id "lojix"  :label "lojix daemon (forge + store)"))
+(Assert (Node :slot 104 :id "sema"   :label "sema (redb)"))
 
 ;; The edges:
-(Assert (Edge :slot 200
-              :from 100
-              :to 101
-              :label "nexus text"
-              :style Solid))
-
-(Assert (Edge :slot 201
-              :from 101
-              :to 102
-              :label "signal rkyv"
-              :style Solid))
-
-(Assert (Edge :slot 202
-              :from 102
-              :to 104
-              :label "writes"
-              :style Thick))
-
-(Assert (Edge :slot 203
-              :from 102
-              :to 103
-              :label "lojix-schema"
-              :style Solid))
+(Assert (Edge :slot 200 :from 100 :to 101 :label "nexus text"))
+(Assert (Edge :slot 201 :from 101 :to 102 :label "signal rkyv"))
+(Assert (Edge :slot 202 :from 102 :to 104 :label "writes"))
+(Assert (Edge :slot 203 :from 102 :to 103 :label "lojix-schema"))
 
 ;; The graph that ties them together:
 (Assert (Graph :slot 300
                :title "criome request flow"
-               :direction LeftRight
                :nodes [100 101 102 103 104]
                :edges [200 201 202 203]
                :subgraphs []))
