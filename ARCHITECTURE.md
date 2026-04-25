@@ -34,7 +34,7 @@ Owns (`[lib]` + `[[bin]]` split):
   serialisation.
 - The **mechanical translation rule**: every nexus text
   construct has exactly one signal form, and vice versa. Per
-  [mentci-next/reports/070 §7](https://github.com/LiGoldragon/mentci-next/blob/main/reports/070-nexus-language-and-contract.md).
+  [mentci/reports/070 §7](https://github.com/LiGoldragon/mentci/blob/main/reports/070-nexus-language-and-contract.md).
 
 Does not own:
 
@@ -96,7 +96,7 @@ src/
   client-state (held by clients via Resume) or criomed-state
   (held in sema). nexusd holds correlation only.
 - **rkyv 0.8 portable feature set** for client-msg per
-  [mentci-next/reports/074](https://github.com/LiGoldragon/mentci-next/blob/main/reports/074-portable-rkyv-discipline.md).
+  [mentci/reports/074](https://github.com/LiGoldragon/mentci/blob/main/reports/074-portable-rkyv-discipline.md).
 
 ## Status
 
@@ -106,6 +106,6 @@ shipped; main daemon body lands alongside criomed scaffolding.
 ## Cross-cutting context
 
 - Three-layer messaging story (client-msg / signal / criome-
-  net): [mentci-next/reports/077](https://github.com/LiGoldragon/mentci-next/blob/main/reports/077-nexus-and-signal.md)
+  net): [mentci/reports/077](https://github.com/LiGoldragon/mentci/blob/main/reports/077-nexus-and-signal.md)
 - Project-wide architecture:
-  [mentci-next/docs/architecture.md](https://github.com/LiGoldragon/mentci-next/blob/main/docs/architecture.md)
+  [criome/ARCHITECTURE.md](https://github.com/LiGoldragon/criome/blob/main/ARCHITECTURE.md)
