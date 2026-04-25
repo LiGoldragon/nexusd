@@ -1,8 +1,6 @@
 //! [`Reply`] — what nexusd sends back to a client.
 
-use std::path::PathBuf;
-
-use crate::client_msg::frame::RequestId;
+use crate::client_msg::{frame::RequestId, WirePath};
 
 #[derive(Debug)]
 pub enum Reply {
@@ -24,7 +22,7 @@ pub enum Reply {
     /// belt-and-braces delivery.
     DoneWithFallback {
         reply_text: String,
-        fallback_path: PathBuf,
+        fallback_path: WirePath,
     },
 
     /// Failed before reaching criomed (parse error, schema

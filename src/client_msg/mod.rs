@@ -44,10 +44,12 @@
 
 pub mod fallback;
 pub mod frame;
+pub mod path;
 pub mod reply;
 pub mod request;
 
 pub use fallback::{FallbackFormat, FallbackSpec};
 pub use frame::{Body, Frame, RequestId};
+pub use path::WirePath;
 pub use reply::{Reply, WorkingStage};
 pub use request::Request;
