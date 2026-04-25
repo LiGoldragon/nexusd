@@ -1,0 +1,61 @@
+;; flow-graph.nexus — assert + query a small flow-graph using
+;; signal's first-milestone kinds (Node, Edge, Graph).
+;;
+;; Per Li 2026-04-25: nexus is the text equivalent of reading a
+;; known-type binary format. Records are positional, no field
+;; names appear in the text, no Assert wrapper, no quoted-strings
+;; for ident-shaped values. The reader/writer must know the
+;; schema to interpret each record.
+;;
+;; Schema (signal/src/flow.rs):
+;;   Node  { id: String, label: String }
+;;   Edge  { from: Slot, to: Slot, label: Option<String> }
+;;   Graph { title: String, nodes: Vec<Slot>, edges: Vec<Slot>, subgraphs: Vec<Slot> }
+;;
+;; A bare record at top level IS an assertion. Slots (u64) are
+;; bare integers. Strings: bare ident-class tokens (camelCase /
+;; kebab-case) emit bare; anything else uses [delimited] form.
+
+;; ──────────────── Five Nodes ────────────────
+
+(Node user   [User])
+(Node nexus  [nexus daemon])
+(Node criome [criome daemon])
+(Node lojix  [lojix daemon])
+(Node sema   [sema redb store])
+
+;; ──────────────── Four Edges ────────────────
+;; Slots above were assigned 100..104 by criome at write time;
+;; we reference them as bare integers here.
+;; Edge.label is Option<String>: Some(x) is transparent, None is
+;; written as the literal None.
+
+(Edge 100 101 [nexus text])
+(Edge 101 102 [signal rkyv])
+(Edge 102 104 [writes])
+(Edge 102 103 [lojix-schema])
+
+;; ──────────────── The Graph ────────────────
+
+(Graph [criome request flow]
+       <100 101 102 103 104>
+       <200 201 202 203>
+       <>)
+
+;; ──────────────── Queries ────────────────
+
+;; All Nodes; bind id and label by schema-position.
+(| Node @id @label |)
+
+;; Edges leaving slot 102 (criome). The bound `to` and `label`
+;; come back; the literal 102 anchors `from`.
+(| Edge 102 @to @label |)
+
+;; The Graph by title — bracket-string in pattern position
+;; matches that exact value.
+(| Graph [criome request flow] @nodes @edges @subgraphs |)
+
+;; ──────────────── Projection ────────────────
+
+;; Project just the `label` field of each Node.
+(| Node @id @label |) { label }

@@ -1,0 +1,47 @@
+;; patterns-and-edits.nexus — pattern, bind, mutate, negate,
+;; constrain. Uses the flow-graph schema for continuity.
+
+;; ──────────────── Bind aliasing ────────────────
+;; `@a=@b` aliases two positions; matches if they unify. Useful
+;; for self-edges (Edge whose `from` equals its `to`):
+
+(| Edge @from=@to @label |)
+
+;; ──────────────── Wildcard ────────────────
+;; `_` matches anything at that position without binding.
+;; Find every Node whose label is anything; ignore id.
+
+(| Node _ @label |)
+
+;; ──────────────── Negate ────────────────
+;; `!` inside a pattern negates a constraint. Find Nodes whose
+;; id is NOT `criome`:
+
+(| Node !criome @label |)
+
+;; Top-level retract — `!Record` removes the asserted fact:
+;; (uncomment to actually retract)
+;; !(Node user [User])
+
+;; ──────────────── Mutate ────────────────
+;; `~` replaces an existing record with the new content. The
+;; identity (slot) is preserved; this is a whole-record swap.
+
+~(Node criome [criome daemon — validator + sema])
+
+;; ──────────────── Constrain (conjunction) ────────────────
+;; `{| ... |}` is logical AND across patterns. Shared bind
+;; names unify. Find every Edge whose `from` Node has a label
+;; (so we know what's emitting it):
+
+{|
+  (| Edge @from @to @edge-label |)
+  (| Node  @from @from-label |)
+|}
+
+;; ──────────────── Projection over a join ────────────────
+
+{|
+  (| Edge @from @to @edge-label |)
+  (| Node  @to   @to-label |)
+|} { from to to-label edge-label }
