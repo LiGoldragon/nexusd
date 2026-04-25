@@ -19,7 +19,7 @@ is owned by `criomed`. Per the sema-ecosystem architecture
 
 Wire format (client-facing): nexus syntax, parsed by
 [nexus-serde](https://github.com/LiGoldragon/nexus-serde).
-Wire format (to criomed): rkyv, over the `criome-msg` contract.
+Wire format (to criomed): rkyv, over the `signal` contract.
 
 ## License
 

@@ -30,7 +30,7 @@ pub enum Reply {
     /// Failed before reaching criomed (parse error, schema
     /// rejection at the syntactic layer, transport failure to
     /// criomed). For criomed-validated rejections, the reply
-    /// text carries a structured Diagnostic in the criome-msg
+    /// text carries a structured Diagnostic in the signal
     /// layer; this variant is for nexusd-internal failures.
     Failed { error: String },
 
@@ -65,7 +65,7 @@ pub enum WorkingStage {
     /// Still parsing the nexus text.
     Parsing,
 
-    /// Waiting on criomed (criome-msg request sent, reply not yet
+    /// Waiting on criomed (signal request sent, reply not yet
     /// in).
     AwaitingCriomed,
 

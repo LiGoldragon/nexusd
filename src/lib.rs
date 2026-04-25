@@ -10,11 +10,11 @@
 //! - `criome_msg` — the nexusd ↔ criomed protocol (rkyv envelopes
 //!   carrying parsed nexus operations). Designed in
 //!   `mentci-next/reports/070` §6. Will live in its own crate
-//!   `criome-msg` (CANON-MISSING) once that crate is created.
+//!   `signal` (CANON-MISSING) once that crate is created.
 //!
 //! nexusd is stateless modulo in-flight request correlations on
 //! both sides. `client_msg` correlates by client-generated
-//! `RequestId`; `criome-msg` correlates by `correlation_id`. The
+//! `RequestId`; `signal` correlates by `correlation_id`. The
 //! two ID spaces are independent — nexusd maintains the mapping
 //! internally.
 //!
