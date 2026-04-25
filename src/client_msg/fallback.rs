@@ -1,9 +1,11 @@
 //! [`FallbackSpec`] — where nexusd writes a reply if the client
 //! socket disappears before the reply is ready.
 
+use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
+
 use crate::client_msg::WirePath;
 
-#[derive(Debug, Clone)]
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, Debug, Clone, PartialEq, Eq)]
 pub struct FallbackSpec {
     /// Filesystem path nexusd will write to. Atomic rename
     /// (write-temp + rename) so a polling client never observes a
@@ -15,7 +17,7 @@ pub struct FallbackSpec {
     pub format: FallbackFormat,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FallbackFormat {
     /// Human-readable nexus text. Same content as
     /// [`super::Reply::Done::reply_text`].

@@ -12,9 +12,11 @@
 
 use std::path::{Path, PathBuf};
 
+use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
+
 /// Raw OS path bytes. Unix-shaped: a POSIX path is a sequence
 /// of bytes terminated by `/`-separated components.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct WirePath(pub Vec<u8>);
 
 impl WirePath {

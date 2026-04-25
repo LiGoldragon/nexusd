@@ -1,8 +1,10 @@
 //! [`Request`] — what a client sends to nexusd.
 
+use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
+
 use crate::client_msg::FallbackSpec;
 
-#[derive(Debug)]
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, Debug, Clone, PartialEq, Eq)]
 pub enum Request {
     /// Submit a nexus message. nexusd parses it, builds a
     /// criome-msg envelope, forwards to criomed, awaits reply,

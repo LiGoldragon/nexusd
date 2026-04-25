@@ -1,8 +1,10 @@
 //! [`Reply`] — what nexusd sends back to a client.
 
+use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
+
 use crate::client_msg::{frame::RequestId, WirePath};
 
-#[derive(Debug)]
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, Debug, Clone, PartialEq, Eq)]
 pub enum Reply {
     /// `Send` received and accepted. Subsequent state is
     /// reportable via `Working` / `Done`.
@@ -58,7 +60,7 @@ pub enum Reply {
     },
 }
 
-#[derive(Debug)]
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WorkingStage {
     /// Still parsing the nexus text.
     Parsing,
