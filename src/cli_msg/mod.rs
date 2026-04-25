@@ -21,17 +21,17 @@
 //!
 //! # Wire layout
 //!
-//! Each wire message is two rkyv archives concatenated:
+//! The wire carries a stream of [`CliFrame`] archives. Both
+//! parties know the [`CliFrame`] rkyv schema, so framing is
+//! intrinsic to the schema — the archived form encodes its own
+//! structure, including any size information needed to delimit
+//! one frame from the next. There is no "raw bytes outside
+//! rkyv" concept; the universal handshake is the frame type.
 //!
-//! 1. Archived `u32` (big-endian, 4 bytes) — the body length.
-//! 2. Archived [`CliFrame`] — `body_length` bytes.
-//!
-//! All-rkyv: the length prefix and the body share one
-//! serialisation discipline; no "raw bytes" outside rkyv on
-//! the wire. The same socket path serves all clients;
-//! per-connection isolation is the OS's job. No upper bound on
-//! frame size at the protocol level (decoders MAY refuse > a
-//! configured threshold).
+//! The same socket path serves all clients; per-connection
+//! isolation is the OS's job. No upper bound on frame size at
+//! the protocol level (decoders MAY refuse > a configured
+//! threshold).
 //!
 //! # Policy reference
 //!
@@ -39,7 +39,7 @@
 //! request-id strategy, nexusd state machine, cancel semantics,
 //! connection model) live in `mentci-next/reports/071`.
 //! The types in this module are deliberately policy-free; only
-//! the wire-shape commitments are codified here. Policies tune
+//! the schema commitments are codified here. Policies tune
 //! freely as implementation lands.
 
 pub mod fallback;
