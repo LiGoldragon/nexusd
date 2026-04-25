@@ -12,12 +12,11 @@ use crate::client_msg::{Reply, Request};
 pub struct RequestId(pub u128);
 
 impl RequestId {
-    /// Generate a fresh client-side ID. Strategy is the client's
-    /// concern — uuid-v7 recommended; monotonic counter
-    /// acceptable for processes that don't share a fallback
-    /// directory.
+    /// Generate a fresh client-side ID using UUID v7 (time-
+    /// ordered, globally unique). Per
+    /// `mentci-next/reports/071` §2.3.
     pub fn fresh() -> Self {
-        todo!()
+        Self(uuid::Uuid::now_v7().as_u128())
     }
 }
 

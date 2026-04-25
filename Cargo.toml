@@ -19,6 +19,7 @@ path = "src/main.rs"
 clap = { version = "4", features = ["derive"] }
 thiserror = "2"
 ractor = "0.15"
+uuid = { version = "1", features = ["v7"] }
 
 [lints.rust]
 unused = "allow"
