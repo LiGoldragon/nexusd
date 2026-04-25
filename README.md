@@ -14,7 +14,7 @@ The nexus language: spec + translator daemon.
   nexus text.
 - `src/` — the daemon implementation. Parses nexus text via
   `nota-serde-core` at `Dialect::Nexus`, builds [signal](https://github.com/LiGoldragon/signal)
-  frames, dials criomed over UDS, serialises replies back to
+  frames, dials criome over UDS, serialises replies back to
   text.
 - `src/client_msg/` — the rkyv envelope between *any* client
   and the daemon (re-exported as `nexus::client_msg`).
@@ -32,7 +32,7 @@ ARCHITECTURE.md](https://github.com/LiGoldragon/criome/blob/main/ARCHITECTURE.md
 - **Client side** (UDS): `client-msg` rkyv envelope around
   nexus text + control verbs (Heartbeat / Cancel / Resume).
   Lib half (`nexus::client_msg`) exposed for clients.
-- **criomed side** (UDS): [`signal`](https://github.com/LiGoldragon/signal)
+- **criome side** (UDS): [`signal`](https://github.com/LiGoldragon/signal)
   rkyv frames carrying language IR.
 
 Nexus text is the *only* non-rkyv messaging surface in the

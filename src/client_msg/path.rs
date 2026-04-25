@@ -8,7 +8,7 @@
 //! introduce normalisation hazards for no benefit.
 //!
 //! When `criome-types` lands, this newtype moves there (paths
-//! also appear in lojix-msg verbs).
+//! also appear in lojix-schema verbs).
 
 use std::path::{Path, PathBuf};
 

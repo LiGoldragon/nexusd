@@ -5,7 +5,7 @@ edition      = "2024"
 rust-version = "1.85"
 license      = "MIT OR Apache-2.0"
 repository   = "https://github.com/LiGoldragon/nexus"
-description  = "Nexus — the text request language and its translator daemon. Parses nexus messages, forwards rkyv signal frames to criomed. Includes the grammar spec under spec/."
+description  = "Nexus — the text request language and its translator daemon. Parses nexus messages, forwards rkyv signal frames to criome. Includes the grammar spec under spec/."
 
 [lib]
 name = "nexus"

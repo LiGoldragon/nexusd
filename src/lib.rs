@@ -7,7 +7,7 @@
 //!   nexus text + a *client-generated* request ID. Heartbeats,
 //!   cancel, resume, fallback-file delivery for disconnected
 //!   requesters. Criomed never sees this layer.
-//! - `criome_msg` — the nexusd ↔ criomed protocol (rkyv envelopes
+//! - `criome_msg` — the nexusd ↔ criome protocol (rkyv envelopes
 //!   carrying parsed nexus operations). Designed in
 //!   `mentci-next/reports/070` §6. Will live in its own crate
 //!   `signal` (CANON-MISSING) once that crate is created.

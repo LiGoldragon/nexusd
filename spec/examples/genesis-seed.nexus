@@ -1,0 +1,69 @@
+;; genesis-seed.nexus — example seed records loaded at criome's
+;; first boot.
+;;
+;; Genesis-via-nexus: criome ships this file with its binary,
+;; dispatches it through the same nexus → signal → criome flow
+;; as user requests. No internal-assert path; no baked-in rkyv
+;; shortcut. Each (Assert …) below is a real signal frame that
+;; runs the validator pipeline.
+;;
+;; Slot range [0, 1024) is reserved for seed records.
+;;
+;; This file is illustrative — the actual genesis.nexus shipped
+;; with criome will be authored against the locked v0.0.1 schema.
+
+;; ──────────────── Schema-of-schema ────────────────
+
+;; The kind of all kinds: KindDecl describes a record kind.
+(Assert (KindDecl :slot 1
+                  :name "KindDecl"
+                  :category 0
+                  :fields [(FieldSpec :name "name"     :type "String")
+                           (FieldSpec :name "category" :type "Slot")
+                           (FieldSpec :name "fields"   :type "List<FieldSpec>")]))
+
+;; FieldSpec describes a field of a kind.
+(Assert (KindDecl :slot 2
+                  :name "FieldSpec"
+                  :category 0
+                  :fields [(FieldSpec :name "name" :type "String")
+                           (FieldSpec :name "type" :type "TypeRef")]))
+
+;; ──────────────── Categories ────────────────
+
+;; The `machina` category — code records that compile to Rust.
+(Assert (CategoryDecl :slot 10
+                      :name "machina"
+                      :stratum-max 2))
+
+;; The `world-fact` category — facts about the world (post-MVP).
+(Assert (CategoryDecl :slot 11
+                      :name "world-fact"
+                      :stratum-max 1))
+
+;; ──────────────── Authz seed ────────────────
+
+;; The bootstrap principal. Only used during genesis; a real
+;; Principal record (with public key) replaces this in normal
+;; operation.
+(Assert (Principal :slot 100
+                   :pubkey 0x00
+                   :display-name "operator"))
+
+(Assert (Quorum :slot 101
+                :members [100]
+                :threshold 1))
+
+(Assert (Policy :slot 102
+                :resource-pattern :all
+                :allowed-ops [Assert Mutate Retract Patch Query]
+                :required-quorum 101))
+
+;; ──────────────── Genesis marker ────────────────
+
+;; The presence of a SemaGenesis record at slot 1 (well-known)
+;; tells criome at second boot "you have already run genesis;
+;; don't dispatch genesis.nexus again."
+(Assert (SemaGenesis :slot 1
+                     :marker 0xDEADBEEF
+                     :created-at 0))

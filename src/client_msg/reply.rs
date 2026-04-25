@@ -11,7 +11,7 @@ pub enum Reply {
     Ack,
 
     /// Probe response: still working. `stage` lets the client
-    /// distinguish parse-stage from criomed-pending from
+    /// distinguish parse-stage from criome-pending from
     /// reply-serialisation.
     Working { stage: WorkingStage },
 
@@ -27,9 +27,9 @@ pub enum Reply {
         fallback_path: WirePath,
     },
 
-    /// Failed before reaching criomed (parse error, schema
+    /// Failed before reaching criome (parse error, schema
     /// rejection at the syntactic layer, transport failure to
-    /// criomed). For criomed-validated rejections, the reply
+    /// criome). For criome-validated rejections, the reply
     /// text carries a structured Diagnostic in the signal
     /// layer; this variant is for nexusd-internal failures.
     Failed { error: String },
@@ -65,10 +65,10 @@ pub enum WorkingStage {
     /// Still parsing the nexus text.
     Parsing,
 
-    /// Waiting on criomed (signal request sent, reply not yet
+    /// Waiting on criome (signal request sent, reply not yet
     /// in).
     AwaitingCriomed,
 
-    /// Got criomed's reply; serialising back to nexus text.
+    /// Got criome's reply; serialising back to nexus text.
     SerialisingReply,
 }

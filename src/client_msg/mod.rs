@@ -8,7 +8,7 @@
 //!
 //! - **Client-generated request IDs.** Every client request
 //!   carries a [`frame::RequestId`]. The space is the client's;
-//!   nexusd uses it for correlation; criomed never sees it.
+//!   nexusd uses it for correlation; criome never sees it.
 //! - **Indefinite waiting on the client side.** Clients do *not*
 //!   time out on their own. They wait as long as needed for a
 //!   reply.

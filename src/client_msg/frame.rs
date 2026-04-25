@@ -7,7 +7,7 @@ use crate::client_msg::{Reply, Request};
 /// Client-generated correlation ID.
 ///
 /// Every client request carries one. nexusd never invents IDs
-/// in this space; criomed never sees them.
+/// in this space; criome never sees them.
 #[derive(
     Archive, RkyvSerialize, RkyvDeserialize,
     Clone, Copy, Debug, PartialEq, Eq, Hash,

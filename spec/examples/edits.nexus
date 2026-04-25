@@ -1,0 +1,73 @@
+;; edits.nexus — basic edit verbs in actual nexus syntax.
+;;
+;; Per nexus's grammar: records are positional `(TypeName v1 v2 …)`,
+;; field names live in the schema. Edit verbs (Assert, Mutate,
+;; Retract, Patch, TxnBatch) wrap a record or slot reference and
+;; carry CAS / batch metadata via `:expected-rev` and the `{|| ||}`
+;; atomic delimiter.
+
+;; ──────────────── Assert ────────────────
+;; Introduce a new record at a slot. nexus daemon parses, signal
+;; envelope wraps, criome's validator pipeline runs schema → refs
+;; → invariants → permissions → write → cascade.
+
+(Assert (Person :slot 100
+                :name "Alice"
+                :age 30))
+
+(Assert (Module :slot 200
+                :name "criome"
+                :visibility Public))
+
+;; ──────────────── Mutate ────────────────
+;; Whole-record replacement at an existing slot. Slot identity
+;; preserved (subscriptions see SubMutate, not SubRetract+SubAssert).
+;; The `~` sigil at top-level record position is shorthand for
+;; (Mutate …). CAS via `:expected-rev`.
+
+(Mutate :slot 100
+        :expected-rev 5
+        (Person :name "Alice"
+                :age 31))
+
+;; Sigil form, equivalent:
+~(Person :slot 100 :expected-rev 5 :name "Alice" :age 31)
+
+;; ──────────────── Retract ────────────────
+;; Remove the record bound at a slot. Validator rejects if any
+;; outstanding slot-refs would dangle (E0002). The `!` sigil at
+;; top-level record position is shorthand for (Retract …).
+
+(Retract :slot 100 :expected-rev 6)
+
+;; Sigil form:
+!(Person :slot 100)
+
+;; ──────────────── Patch ────────────────
+;; Surgical field-level edit at a path inside a record. Path is
+;; a sequence of segments (field name, list index, variant).
+
+(Patch :slot 200
+       :expected-rev 12
+       :path [name]
+       :value "Criome runtime")
+
+;; Patch into a list element:
+(Patch :slot 200
+       :path [imports 0 alias]
+       :value "sig")
+
+;; ──────────────── TxnBatch ────────────────
+;; Atomic envelope: all-or-nothing. The `{|| … ||}` delimiter
+;; wraps a sequence of edit ops. One Revision; one redb txn.
+;; First failure halts the batch; reply names the failed op
+;; index. No partial-commit / best-effort mode.
+
+{||
+  (Assert (Person :slot 101 :name "Bob" :age 25))
+  (Assert (Person :slot 102 :name "Cara" :age 28))
+  (Mutate :slot 200
+          :expected-rev 13
+          (Module :name "criome"
+                  :members [101 102]))
+||}

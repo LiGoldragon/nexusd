@@ -7,7 +7,7 @@ This repo (renamed from `nexusd` 2026-04-25, local dir still
 1. [`spec/grammar.md`](spec/grammar.md) — the canonical nexus
    grammar spec.
 2. `src/` — the daemon binary `nexus`. Speaks nexus text on the
-   client side; speaks signal rkyv on the criomed side. Holds
+   client side; speaks signal rkyv on the criome side. Holds
    **no sema state** — purely a messenger.
 
 ```
@@ -25,7 +25,7 @@ client (nexus-cli, agents, editors)
      │ signal (rkyv envelope around language IR)
      │
      ▼
-   criomed
+   criome
 ```
 
 ## Boundaries
@@ -39,7 +39,7 @@ Owns (`[lib]` + `[[bin]]` split):
   agent harnesses, and `nexus-cli` all import the same
   contract types via `nexus::client_msg`.
 - **bin half** (`src/main.rs`): the daemon process — UDS
-  listener, parsing, signal connection to criomed, reply
+  listener, parsing, signal connection to criome, reply
   serialisation.
 - The **mechanical translation rule**: every nexus text
   construct has exactly one signal form, and vice versa.
@@ -50,7 +50,7 @@ Does not own:
   [nota-serde-core](https://github.com/LiGoldragon/nota-serde-core)).
 - The signal envelope (lives in
   [signal](https://github.com/LiGoldragon/signal)).
-- Sema state — that's criomed's exclusive concern.
+- Sema state — that's criome's exclusive concern.
 - The validator pipeline.
 
 ## Two messaging surfaces
@@ -60,7 +60,7 @@ The nexus daemon is the *only* place where these meet:
 | Surface | Direction | Format | Carries |
 |---|---|---|---|
 | **client-msg** | client ↔ nexus | rkyv | nexus text payload + control (Heartbeat / Cancel / Resume / fallback file) |
-| **signal** | nexus ↔ criomed | rkyv | language IR (Assert / Mutate / Query / Subscribe / …) |
+| **signal** | nexus ↔ criome | rkyv | language IR (Assert / Mutate / Query / Subscribe / …) |
 
 Nexus text is the *only* non-rkyv messaging surface in the
 sema-ecosystem. It is transient — never persisted, never
@@ -76,7 +76,7 @@ The daemon holds:
   before its reply lands.
 
 Nothing else. No sema cache, no record knowledge — kind
-resolution happens at criomed.
+resolution happens at criome.
 
 ## Code map
 
@@ -102,9 +102,9 @@ nexus/                            # github repo; local dir nexusd/
 ## Invariants
 
 - **Text crosses only at this boundary.** All daemon-to-daemon
-  internal traffic is rkyv. No raw nexus text reaches criomed.
+  internal traffic is rkyv. No raw nexus text reaches criome.
 - **No state survives a request.** Anything stateful is
-  client-state (held by clients via Resume) or criomed-state
+  client-state (held by clients via Resume) or criome-state
   (held in sema). The daemon holds correlation only.
 - **rkyv 0.8 portable feature set** for client-msg per
   [mentci/reports/074](https://github.com/LiGoldragon/mentci/blob/main/reports/074-portable-rkyv-discipline.md).
@@ -112,7 +112,7 @@ nexus/                            # github repo; local dir nexusd/
 ## Status
 
 **Skeleton-as-design.** client-msg types + Frame::encode/decode
-shipped; main daemon body lands alongside criomed scaffolding.
+shipped; main daemon body lands alongside criome scaffolding.
 
 ## Cross-cutting context
 

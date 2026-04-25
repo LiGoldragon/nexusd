@@ -7,7 +7,7 @@ use crate::client_msg::FallbackSpec;
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, Debug, Clone, PartialEq, Eq)]
 pub enum Request {
     /// Submit a nexus message. nexusd parses it, builds a
-    /// signal envelope, forwards to criomed, awaits reply,
+    /// signal envelope, forwards to criome, awaits reply,
     /// returns it as a [`super::Reply::Done`].
     Send {
         /// Raw nexus text. nexusd is responsible for parsing.
@@ -30,7 +30,7 @@ pub enum Request {
     Heartbeat,
 
     /// Cancel an in-flight request. nexusd may forward a cancel
-    /// to criomed if the signal layer supports it; otherwise
+    /// to criome if the signal layer supports it; otherwise
     /// the reply (if any) is discarded.
     Cancel,
 
