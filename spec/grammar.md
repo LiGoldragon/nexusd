@@ -236,7 +236,7 @@ nexus-specific:
 
 [nexus-serde](https://github.com/LiGoldragon/nexus-serde) implements
 `serde::Serializer` + `serde::Deserializer` for the full grammar.
-Consumer code (e.g. [nexusd](https://github.com/LiGoldragon/nexusd),
+Consumer code (e.g. [nexus](https://github.com/LiGoldragon/nexus),
 [nexus-cli](https://github.com/LiGoldragon/nexus-cli)) derives
 serde on message types and round-trips them through nexus text.
 

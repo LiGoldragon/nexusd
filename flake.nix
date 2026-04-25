@@ -25,7 +25,7 @@
       in
       {
         devShells.default = pkgs.mkShell {
-          name = "nexusd";
+          name = "nexus";
           packages = [
             pkgs.jujutsu
             toolchain

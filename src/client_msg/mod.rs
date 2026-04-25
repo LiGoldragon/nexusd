@@ -1,4 +1,4 @@
-//! client_msg — the protocol any client speaks to nexusd.
+//! client_msg — the protocol any client speaks to nexus.
 //!
 //! Clients include `nexus-cli`, editor LSPs, scripts, agents,
 //! and any future tool that needs to author nexus messages and
@@ -8,15 +8,15 @@
 //!
 //! - **Client-generated request IDs.** Every client request
 //!   carries a [`frame::RequestId`]. The space is the client's;
-//!   nexusd uses it for correlation; criome never sees it.
+//!   nexus uses it for correlation; criome never sees it.
 //! - **Indefinite waiting on the client side.** Clients do *not*
 //!   time out on their own. They wait as long as needed for a
 //!   reply.
 //! - **Heartbeat probe.** Clients periodically send a
 //!   [`Request::Heartbeat`] with the same [`frame::RequestId`].
-//!   nexusd replies with [`Reply::Working`] or [`Reply::Done`].
+//!   nexus replies with [`Reply::Working`] or [`Reply::Done`].
 //! - **Backup-file fallback.** If the requester's socket drops
-//!   while nexusd is still working, nexusd writes the eventual
+//!   while nexus is still working, nexus writes the eventual
 //!   reply to the path the client provided in
 //!   [`fallback::FallbackSpec`]. A later [`Request::Resume`]
 //!   can pick the reply up.
@@ -36,8 +36,8 @@
 //! # Policy reference
 //!
 //! Detailed policies (heartbeat interval, fallback file path,
-//! request-id strategy, nexusd state machine, cancel semantics,
-//! connection model) live in `mentci-next/reports/071`. The
+//! request-id strategy, nexus state machine, cancel semantics,
+//! connection model) live in `mentci/reports/071`. The
 //! types in this module are deliberately policy-free; only the
 //! schema commitments are codified here. Policies tune freely
 //! as implementation lands.

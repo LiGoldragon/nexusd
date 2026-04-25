@@ -1,8 +1,7 @@
 # ARCHITECTURE — nexus
 
 The nexus language: **spec + translator daemon** in one repo.
-This repo (renamed from `nexusd` 2026-04-25, local dir still
-`~/git/nexusd/`) holds:
+This repo holds:
 
 1. [`spec/grammar.md`](spec/grammar.md) — the canonical nexus
    grammar spec.
@@ -81,7 +80,7 @@ resolution happens at criome.
 ## Code map
 
 ```
-nexus/                            # github repo; local dir nexusd/
+nexus/
 ├── spec/
 │   ├── grammar.md                — the nexus grammar spec
 │   └── example.nexus             — illustrative input

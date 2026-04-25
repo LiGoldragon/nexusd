@@ -1,4 +1,4 @@
-//! nexusd — the nexus-text messenger.
+//! nexus — the nexus-text messenger.
 //!
 //! Parses nexus messages over a Unix socket (or stdio), forwards
 //! rkyv criome-messages to criome, relays replies back as nexus

@@ -1,4 +1,4 @@
-//! [`Reply`] — what nexusd sends back to a client.
+//! [`Reply`] — what nexus sends back to a client.
 
 use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
 
@@ -18,7 +18,7 @@ pub enum Reply {
     /// The request completed.
     Done { reply_text: String },
 
-    /// The request completed AND nexusd also wrote the reply to
+    /// The request completed AND nexus also wrote the reply to
     /// the fallback path the client supplied. Useful when the
     /// requester's socket has been flaky and the client wants
     /// belt-and-braces delivery.
@@ -31,14 +31,14 @@ pub enum Reply {
     /// rejection at the syntactic layer, transport failure to
     /// criome). For criome-validated rejections, the reply
     /// text carries a structured Diagnostic in the signal
-    /// layer; this variant is for nexusd-internal failures.
+    /// layer; this variant is for nexus-internal failures.
     Failed { error: String },
 
     /// Cancellation acknowledged.
     Cancelled,
 
     /// Resume succeeded; here is the reply from your earlier
-    /// request, retrieved from the fallback path. nexusd has
+    /// request, retrieved from the fallback path. nexus has
     /// deleted the file.
     ResumedReply {
         original_request_id: RequestId,

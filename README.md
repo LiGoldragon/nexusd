@@ -2,10 +2,6 @@
 
 The nexus language: spec + translator daemon.
 
-> Renamed from `nexusd` 2026-04-25; the nexus spec repo
-> ([`LiGoldragon/nexus-spec-archive`](https://github.com/LiGoldragon/nexus-spec-archive))
-> was archived and its content folded into [`spec/`](spec/) here.
-
 ## What's here
 
 - [`spec/grammar.md`](spec/grammar.md) — the nexus grammar spec

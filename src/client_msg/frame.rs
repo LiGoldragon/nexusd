@@ -1,4 +1,4 @@
-//! [`Frame`] — the wire envelope for any client ↔ nexusd.
+//! [`Frame`] — the wire envelope for any client ↔ nexus.
 
 use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
 
@@ -6,7 +6,7 @@ use crate::client_msg::{Reply, Request};
 
 /// Client-generated correlation ID.
 ///
-/// Every client request carries one. nexusd never invents IDs
+/// Every client request carries one. nexus never invents IDs
 /// in this space; criome never sees them.
 #[derive(
     Archive, RkyvSerialize, RkyvDeserialize,
@@ -17,7 +17,7 @@ pub struct RequestId(pub u128);
 impl RequestId {
     /// Generate a fresh client-side ID using UUID v7 (time-
     /// ordered, globally unique). Per
-    /// `mentci-next/reports/071` §2.3.
+    /// `mentci/reports/071` §2.3.
     pub fn fresh() -> Self {
         Self(uuid::Uuid::now_v7().as_u128())
     }
