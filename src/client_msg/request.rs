@@ -1,12 +1,12 @@
-//! [`CliRequest`] — what nexus-cli sends to nexusd.
+//! [`Request`] — what a client sends to nexusd.
 
-use crate::cli_msg::FallbackSpec;
+use crate::client_msg::FallbackSpec;
 
 #[derive(Debug)]
-pub enum CliRequest {
+pub enum Request {
     /// Submit a nexus message. nexusd parses it, builds a
     /// criome-msg envelope, forwards to criomed, awaits reply,
-    /// returns it as a [`super::CliReply::Done`].
+    /// returns it as a [`super::Reply::Done`].
     Send {
         /// Raw nexus text. nexusd is responsible for parsing.
         nexus_text: String,
@@ -19,12 +19,12 @@ pub enum CliRequest {
     },
 
     /// "Still waiting, is everything ok?" — sent periodically by
-    /// nexus-cli while a `Send` is outstanding. nexusd replies
-    /// with [`super::CliReply::Working`] or
-    /// [`super::CliReply::Done`] depending on state.
+    /// the client while a `Send` is outstanding. nexusd replies
+    /// with [`super::Reply::Working`] or [`super::Reply::Done`]
+    /// depending on state.
     ///
-    /// Carries no extra payload; the `cli_request_id` in the
-    /// enclosing [`super::CliFrame`] is the correlation.
+    /// Carries no extra payload; the [`super::frame::RequestId`]
+    /// in the enclosing [`super::Frame`] is the correlation.
     Heartbeat,
 
     /// Cancel an in-flight request. nexusd may forward a cancel
@@ -35,13 +35,13 @@ pub enum CliRequest {
     /// Resume an earlier request whose reply was written to a
     /// fallback path because the original requester's socket
     /// dropped. nexusd reads the path, returns its contents as
-    /// [`super::CliReply::ResumedReply`], deletes the file.
+    /// [`super::Reply::ResumedReply`], deletes the file.
     ///
-    /// The `cli_request_id` carried on the enclosing frame is the
-    /// id of *this* resume request, not the original. The
-    /// original ID is in the resume payload.
+    /// The [`super::frame::RequestId`] carried on the enclosing
+    /// frame is the id of *this* resume request, not the
+    /// original. The original ID is in the resume payload.
     Resume {
-        original_request_id: super::CliRequestId,
+        original_request_id: super::frame::RequestId,
         fallback: FallbackSpec,
     },
 }

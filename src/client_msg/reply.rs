@@ -1,11 +1,11 @@
-//! [`CliReply`] — what nexusd sends back to nexus-cli.
+//! [`Reply`] — what nexusd sends back to a client.
 
 use std::path::PathBuf;
 
-use crate::cli_msg::CliRequestId;
+use crate::client_msg::frame::RequestId;
 
 #[derive(Debug)]
-pub enum CliReply {
+pub enum Reply {
     /// `Send` received and accepted. Subsequent state is
     /// reportable via `Working` / `Done`.
     Ack,
@@ -41,7 +41,7 @@ pub enum CliReply {
     /// request, retrieved from the fallback path. nexusd has
     /// deleted the file.
     ResumedReply {
-        original_request_id: CliRequestId,
+        original_request_id: RequestId,
         reply_text: String,
     },
 
