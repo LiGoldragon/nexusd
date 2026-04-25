@@ -38,3 +38,27 @@ impl WirePath {
         self.as_path().to_path_buf()
     }
 }
+
+#[cfg(test)]
+#[cfg(unix)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn from_path_then_as_path_round_trip() {
+        let p = Path::new("/tmp/example/file.txt");
+        let wp = WirePath::from_path(p);
+        assert_eq!(wp.as_path(), p);
+    }
+
+    #[test]
+    fn round_trip_preserves_non_utf8_bytes() {
+        // POSIX paths can contain arbitrary bytes; ensure the
+        // raw-bytes wire form survives a round-trip without
+        // string normalisation.
+        let bytes = vec![b'/', 0xff, 0xfe, b'/', b'a'];
+        let wp = WirePath(bytes.clone());
+        let back = WirePath::from_path(wp.as_path());
+        assert_eq!(back.0, bytes);
+    }
+}

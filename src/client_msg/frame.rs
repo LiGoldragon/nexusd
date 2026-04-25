@@ -52,3 +52,19 @@ pub enum FrameDecodeError {
     #[error("trailing bytes after frame")]
     TrailingBytes,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::HashSet;
+
+    #[test]
+    fn fresh_ids_are_unique() {
+        let mut ids = HashSet::new();
+        for _ in 0..100 {
+            let id = RequestId::fresh();
+            assert!(ids.insert(id), "duplicate RequestId {id:?}");
+        }
+        assert_eq!(ids.len(), 100);
+    }
+}
