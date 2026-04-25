@@ -1,18 +1,18 @@
 [package]
-name         = "nexusd"
+name         = "nexus"
 version      = "0.1.0"
 edition      = "2024"
 rust-version = "1.85"
 license      = "MIT OR Apache-2.0"
-repository   = "https://github.com/LiGoldragon/nexusd"
-description  = "Nexus-text messenger — parses nexus messages, forwards rkyv criome-messages to criomed"
+repository   = "https://github.com/LiGoldragon/nexus"
+description  = "Nexus — the text request language and its translator daemon. Parses nexus messages, forwards rkyv signal frames to criomed. Includes the grammar spec under spec/."
 
 [lib]
-name = "nexusd"
+name = "nexus"
 path = "src/lib.rs"
 
 [[bin]]
-name = "nexusd"
+name = "nexus"
 path = "src/main.rs"
 
 [dependencies]

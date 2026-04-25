@@ -8,7 +8,7 @@
 //! Library half (protocol contract types) is in
 //! [`crate::cli_msg`]; see `lib.rs` for the layer split.
 
-use nexusd::error::Result;
+use nexus::error::Result;
 
 fn main() -> Result<()> {
     Ok(())
