@@ -4,10 +4,11 @@
 //! rkyv criome-messages to criomed, relays replies back as nexus
 //! text. Stateless modulo in-flight request correlations — criomed
 //! (sema's engine) and lojixd (owner of lojix-store) hold the state.
+//!
+//! Library half (protocol contract types) is in
+//! [`crate::cli_msg`]; see `lib.rs` for the layer split.
 
-mod error;
-
-use error::Result;
+use nexusd::error::Result;
 
 fn main() -> Result<()> {
     Ok(())

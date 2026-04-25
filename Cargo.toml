@@ -7,7 +7,19 @@ license      = "MIT OR Apache-2.0"
 repository   = "https://github.com/LiGoldragon/nexusd"
 description  = "Nexus-text messenger — parses nexus messages, forwards rkyv criome-messages to criomed"
 
+[lib]
+name = "nexusd"
+path = "src/lib.rs"
+
+[[bin]]
+name = "nexusd"
+path = "src/main.rs"
+
 [dependencies]
 clap = { version = "4", features = ["derive"] }
 thiserror = "2"
 ractor = "0.15"
+
+[lints.rust]
+unused = "allow"
+dead_code = "allow"
