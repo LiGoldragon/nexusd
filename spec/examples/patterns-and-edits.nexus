@@ -22,7 +22,7 @@
 
 ;; Top-level retract — `!Record` removes the asserted fact:
 ;; (uncomment to actually retract)
-;; !(Node user "User")
+;; !(Node user User)
 
 ;; ──────────────── Mutate ────────────────
 ;; `~` replaces an existing record with the new content. The
@@ -70,7 +70,7 @@
 ;; multiple records.
 
 [|
-  (Node a "Apple")
-  (Node b "Banana")
-  (Edge 200 201 "neighbour")
+  (Node a Apple)
+  (Node b Banana)
+  (Edge 200 201 neighbour)
 |]

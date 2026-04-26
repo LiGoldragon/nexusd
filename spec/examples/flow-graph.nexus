@@ -17,7 +17,7 @@
 
 ;; ──────────────── Five Nodes ────────────────
 
-(Node user   "User")
+(Node user   User)
 (Node nexus  "nexus daemon")
 (Node criome "criome daemon")
 (Node lojix  "lojix daemon")
@@ -31,8 +31,8 @@
 
 (Edge 100 101 "nexus text")
 (Edge 101 102 "signal rkyv")
-(Edge 102 104 "writes")
-(Edge 102 103 "lojix-schema")
+(Edge 102 104 writes)
+(Edge 102 103 lojix-schema)
 
 ;; ──────────────── The Graph ────────────────
 
