@@ -10,36 +10,37 @@
 
 ;; ──────────────── Wildcard ────────────────
 ;; `_` matches anything at that position without binding.
-;; Find every Node whose label is anything; ignore id.
+;; Find every Edge of any kind, ignore from / to.
 
-(| Node _ @label |)
+(| Edge _ _ @kind |)
 
 ;; ──────────────── Negate ────────────────
 ;; `!` inside a pattern negates a constraint. Find Nodes whose
-;; id is NOT `criome`:
+;; name is NOT "criome daemon":
 
-(| Node !criome @label |)
+(| Node !"criome daemon" |)
 
 ;; Top-level retract — `!Record` removes the asserted fact:
 ;; (uncomment to actually retract)
-;; !(Node user User)
+;; !(Node User)
 
 ;; ──────────────── Mutate ────────────────
 ;; `~` replaces an existing record with the new content. The
 ;; identity (slot) is preserved; this is a whole-record swap.
 
-~(Node criome "criome daemon — validator + sema")
+~(Node "criome daemon — validator + sema")
 
-;; Mutate-with-pattern (subsumes Patch). Keep id, change label:
+;; Mutate-with-pattern: keep from + to, change every matching
+;; Edge's kind to Flow.
 
-~(| Node @id _ |) (Node @id "label updated for every match")
+~(| Edge @from @to _ |) (Edge @from @to Flow)
 
 ;; ──────────────── Validate (dry-run) ────────────────
 ;; `?` prefix on any verb turns it into a dry-run. Tells you
 ;; whether the assert would succeed without doing it.
 
-?(Node fresh "Fresh node")
-?~(Node criome "would replace criome's label")
+?(Node "Fresh node")
+?~(Node "would replace this node's name")
 
 ;; ──────────────── Subscribe ────────────────
 ;; `*` opens a continuous query on this connection. Events stream
@@ -47,24 +48,24 @@
 ;; wants current state, it issues a separate Query first. One
 ;; subscription per connection; close the socket to end.
 
-*(| Node @id @label |)
+*(| Node @name |)
 
 ;; ──────────────── Constrain (conjunction) ────────────────
 ;; `{| ... |}` is logical AND across patterns. Shared bind
-;; names unify. Find every Edge of kind DependsOn whose `from`
-;; Node has a label:
+;; names unify. Find every Edge of kind DependsOn whose `to`
+;; Node has a known name:
 
 {|
   (| Edge @from @to DependsOn |)
-  (| Node  @from @from-label |)
+  (| Node  @to-name |)
 |}
 
 ;; Projection over a join:
 
 {|
   (| Edge @from @to @kind |)
-  (| Node  @to   @to-label |)
-|} { from to to-label kind }
+  (| Node @to-name |)
+|} { from to to-name kind }
 
 ;; ──────────────── Atomic batch ────────────────
 ;; `[| ... |]` runs multiple edits all-or-nothing. Each item
@@ -75,7 +76,7 @@
 ;; assigned slots back to compose later edges).
 
 [|
-  (Node a Apple)
-  (Node b Banana)
+  (Node Apple)
+  (Node Banana)
   (Edge 200 201 DependsOn)
 |]

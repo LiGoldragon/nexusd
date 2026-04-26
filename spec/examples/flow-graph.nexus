@@ -7,8 +7,8 @@
 ;; must know the schema to interpret each record.
 ;;
 ;; Schema (signal/src/flow.rs):
-;;   Node  { id: String, label: String }
-;;   Edge  { from: Slot, to: Slot, kind: RelationKind }
+;;   Node  { name: String }                              ← name is a display handle; identity is the slot
+;;   Edge  { from: Slot, to: Slot, kind: RelationKind }  ← references by slot
 ;;   Graph { title: String, nodes: Vec<Slot>, edges: Vec<Slot>, subgraphs: Vec<Slot> }
 ;;
 ;; RelationKind is a closed enum: Flow / DependsOn / Contains /
@@ -16,20 +16,22 @@
 ;;
 ;; A bare record at top level IS an assertion. Slots (u64) are
 ;; bare integers. Strings: bare ident-class tokens (camelCase /
-;; kebab-case) emit bare; anything else uses "..." or """...""".
-;; Unit variants (RelationKind, Option's None, etc.) emit bare.
+;; kebab-case / PascalCase) emit bare; anything else uses "..."
+;; or """...""". Unit variants (RelationKind, Option's None, etc.)
+;; emit bare PascalCase.
 
 ;; ──────────────── Five Nodes ────────────────
+;; The slot is not specified — criome assigns one per Assert.
 
-(Node user   User)
-(Node nexus  "nexus daemon")
-(Node criome "criome daemon")
-(Node lojix  "lojix daemon")
-(Node sema   "sema redb store")
+(Node User)
+(Node "nexus daemon")
+(Node "criome daemon")
+(Node "lojix daemon")
+(Node "sema redb store")
 
 ;; ──────────────── Four Edges ────────────────
-;; Slots above were assigned 100..104 by criome at write time;
-;; we reference them as bare integers here. Each Edge picks one
+;; The slots above were assigned 100..104 by criome at write
+;; time; we reference them as bare integers. Each Edge picks one
 ;; RelationKind variant — bare PascalCase.
 
 (Edge 100 101 Flow)        ;; user → nexus: data flows
@@ -46,8 +48,8 @@
 
 ;; ──────────────── Queries ────────────────
 
-;; All Nodes; bind id and label by schema-position.
-(| Node @id @label |)
+;; All Nodes; bind name by schema-position.
+(| Node @name |)
 
 ;; Edges leaving slot 102 (criome). The bound `to` and `kind`
 ;; come back; the literal 102 anchors `from`.
@@ -62,5 +64,5 @@
 
 ;; ──────────────── Projection ────────────────
 
-;; Project just the `label` field of each Node.
-(| Node @id @label |) { label }
+;; Project just the `name` field of each Node.
+(| Node @name |) { name }
