@@ -110,8 +110,7 @@ files exist; daemon body lands alongside criome scaffolding.
 
 ## Cross-cutting context
 
-- Reply protocol: [mentci/reports/083](https://github.com/LiGoldragon/mentci/blob/main/reports/083-the-return-protocol.md)
-- Three-layer messaging story:
-  [mentci/reports/077](https://github.com/LiGoldragon/mentci/blob/main/reports/077-nexus-and-signal.md)
 - Project-wide architecture:
   [criome/ARCHITECTURE.md](https://github.com/LiGoldragon/criome/blob/main/ARCHITECTURE.md)
+- Signal (the rkyv form on the criome leg):
+  [signal/ARCHITECTURE.md](https://github.com/LiGoldragon/signal/blob/main/ARCHITECTURE.md)
