@@ -1,10 +1,9 @@
 # nexus
 
 A messaging protocol built on [nota](https://github.com/LiGoldragon/nota).
-Adds sigils, delimiter pairs, and the `=` token for **pattern,
-mutate, bind, negate, shape, and alias** actions against a sema
-world-store. The Rust implementation is
-[nexus-serde](https://github.com/LiGoldragon/nexus-serde).
+Adds sigils and delimiter pairs for **assert / mutate / retract /
+validate / query / subscribe / pattern / shape / constrain /
+atomic-batch** actions against a record graph.
 
 Every valid `.nota` text is also valid `.nexus`; the reverse is
 not true — nexus adds constructs that `.nota` parsers reject.
@@ -18,17 +17,15 @@ This repo is spec-only.
 See [nota's spec](https://github.com/LiGoldragon/nota) for the full
 grammar. nexus inherits:
 
-- 4 delimiter pairs: `( )` records (positional), `[ ]` / `[| |]`
-  strings, `< >` sequences
-- 2 sigils: `;;` line comments, `#` byte-literal prefix
-- 3 identifier classes: PascalCase (types/variants), camelCase
-  (fields in schema / instance names), kebab-case (titles / tags)
-- Integer / float / bool / bytes / string literals, `:` path syntax
-- Bare-identifier string form: when a schema expects a String,
-  an ident-class token (non-reserved) may be written in place
-  of `[identifier]` — e.g. `@horizontal` is a bind, but the
-  string value of a String-typed field `name` can be written
-  bare as `nota-serde` instead of `[nota-serde]`
+- **2 delimiter pairs**: `( )` records, `[ ]` sequences
+- **2 string forms**: `" "` inline, `""" """` multiline
+- **2 sigils**: `;;` line comments, `#` byte-literal prefix
+- **3 identifier classes**: PascalCase (types/variants),
+  camelCase (fields in schema / instance names), kebab-case
+  (titles / tags)
+- Integer / float / bool / bytes literals, `:` path syntax
+- Bare-identifier strings (when the schema expects a String,
+  an ident-class token may be written bare)
 
 Records are positional: `(TypeName v1 v2 …)`. Field names live
 in the schema, not the text.
@@ -37,31 +34,82 @@ in the schema, not the text.
 
 ## Added by nexus
 
-**3 additional delimiter pairs:**
+### 4 additional delimiter pairs
+
+The three families (round, square, curly) each have a piped
+form that means *combine-as-unit*:
 
 | Pair | Role | Example |
 |---|---|---|
-| `(\| \|)` | Pattern — matches a record by shape | `(\| Point @horizontal @vertical \|)` |
-| `{\| \|}` | Constrain — conjunction of patterns | `{\| (\| Point @h @v \|) (\| Positive @h \|) \|}` |
-| `{ }` | Shape — projection / field selection | `{ horizontal vertical }` |
+| `(\| \|)` | **Pattern** — match a record by shape | `(\| Point @h @v \|)` |
+| `[\| \|]` | **Atomic batch** — AND of edits (all-or-nothing) | `[\| (Node a "A") ~(Node b "B") \|]` |
+| `{ }` | **Shape** — projection / field selection | `{ horizontal vertical }` |
+| `{\| \|}` | **Constrain** — conjunction of patterns | `{\| (\| Point @h @v \|) (\| Positive @h \|) \|}` |
 
-**3 additional sigils:**
+Reads as: *plain delimiter = passive data; piped delimiter =
+combine the contained items as a single logical unit*.
+
+### 5 additional sigils
 
 | Sigil | Role | Position |
 |---|---|---|
-| `~` | Mutate marker — "replace / overwrite this" | prefix on a title, record, or pattern |
-| `@` | Bind marker — names a hole the matcher fills | prefix on an identifier in a pattern |
-| `!` | Negate — invert the match or fact | prefix on a value or pattern |
+| `~` | Mutate / replace | prefix on a record or pattern |
+| `!` | Retract / negate | prefix on a record, pattern, or value-in-pattern |
+| `?` | Validate (dry-run) | prefix on any verb |
+| `*` | Subscribe (continuous query) | prefix on a pattern |
+| `@` | Bind hole | prefix on an identifier in a pattern |
 
-**One extra token:**
+### 1 extra token (narrow use)
 
 | Token | Role |
 |---|---|
 | `=` | Bind-alias separator. Valid only between two bind names (`@a=@b`). Not valid as a field-value separator. |
 
-Total: 7 delimiter pairs, 4 sigils, `=` in its narrow role.
-First-token-decidable at every choice point; no interior
-scanning.
+### Reserved tokens (deferred design)
+
+These tokens are reserved for future use and are syntax errors
+today:
+
+- `<` `>` `<=` `>=` `!=` — comparison operators (intended for
+  pattern positions: `(\| Person @age (@age < 21) \|)` or similar
+  form, design pending).
+- `=` between non-bind tokens — equality comparison (the
+  bind-alias use is the *only* `=` use today).
+
+### Totals
+
+- **6 delimiter pairs** (2 from nota + 4 from nexus) + **2 string forms**
+- **7 sigils** (2 from nota + 5 from nexus)
+- **1 narrow-use token** (`=` for bind aliasing)
+- First-token-decidable at every choice point; no interior
+  scanning.
+
+---
+
+## Verbs
+
+A nexus expression at the top level is *one verb*. The verb is
+determined by the leading sigil + delimiter:
+
+| Form | Verb | What it does |
+|---|---|---|
+| `(R …)` | Assert | State a fact: this record exists |
+| `~(R …)` | Mutate | Replace the record at this identity |
+| `!(R …)` | Retract | Remove the record |
+| `?(R …)` | Validate | Dry-run: would this assert succeed? |
+| `~(\| pat \|) (R …)` | Mutate-with-pattern | For each match, overwrite |
+| `!(\| pat \|)` | Retract-matching | Remove matching records |
+| `?(\| pat \|)` | Validate query | Would the query return anything? |
+| `(\| pat \|)` | Query | Find matching records (one-shot) |
+| `*(\| pat \|)` | Subscribe | Match continuously; stream events |
+| `[\| op1 op2 … \|]` | Atomic batch | Run ops atomically (each carries its own sigil) |
+
+Patch is expressed as Mutate-with-pattern that preserves the
+unchanged fields:
+
+```nexus
+~(| Node @id _ |) (Node @id "new label")   ;; keep id, replace label
+```
 
 ---
 
@@ -132,70 +180,6 @@ it's a syntax error.
 
 ---
 
-## Messaging shapes
-
-Five first-class shapes, composed from the inherited + added
-constructs.
-
-### Assert — a plain record
-
-```nexus
-(Point 3.0 4.0)
-```
-
-Identical to nota. An assertion that the record exists / is true.
-
-### Observe — a pattern
-
-```nexus
-(| Point @horizontal @vertical |)
-```
-
-Matches records of type `Point`; returns all binding tuples.
-
-### Shape — a projection
-
-```nexus
-(| Point @horizontal @vertical |) { horizontal }
-```
-
-Match, then project — "give me only `horizontal` of each
-matching record." Shapes can be applied to any pattern.
-
-### Mutate — `~` on a record or pattern
-
-```nexus
-~(Point 0.0 0.0)
-```
-
-Asserts the record, replacing any prior record with the same
-identity.
-
-```nexus
-~(| Point @horizontal @vertical |) (0.0 @vertical)
-```
-
-For each match, overwrite with a new record: horizontal = 0.0,
-vertical unchanged from the bound value. The replacement record
-is positional, just like any other record.
-
-### Negate — `!` on a value, record, or pattern
-
-```nexus
-!(Active)
-```
-
-Retract the fact — `Active` is no longer asserted.
-
-```nexus
-(| Point !0.0 @vertical |)
-```
-
-Matches `Point` records whose horizontal is *not* zero; binds
-vertical.
-
----
-
 ## Constraining multiple patterns
 
 ```nexus
@@ -212,6 +196,68 @@ names (`@horizontal` here) unify across patterns.
 
 ---
 
+## Atomic batches
+
+Multiple edits processed all-or-nothing:
+
+```nexus
+[|
+  (Node a "Apple")
+  ~(Node b "Banana")
+  !(Node c "Cherry")
+|]
+```
+
+Each item carries its own verb sigil. The batch succeeds only if
+every item succeeds; on any failure, no item is applied.
+
+---
+
+## Reply semantics
+
+Replies use the same syntax as requests, **paired by position**.
+The N-th reply on a connection corresponds to the N-th request.
+
+| Request | Reply at the same position |
+|---|---|
+| `(R …)` Assert | `(R …)` — the asserted record (with assigned slot) |
+| `~(R …)` Mutate | `~(R …)` — the new record version |
+| `!(R …)` Retract | `!(R …)` — the retracted record (last echo) |
+| `?(R …)` Validate | `?(R …)` — the would-be record |
+| `(\| pat \|)` Query | `[<r1> <r2> …]` — sequence of matches |
+| `[\| ops \|]` Atomic batch | `[\| reply1 reply2 … \|]` — per-op replies |
+| any verb on failure | a `Diagnostic` record |
+
+### Subscriptions
+
+`*(\| pat \|)` opens a subscription. **One subscription per
+connection.** The first reply is `[<snapshot>]` — the initial
+matching set as a sequence. Subsequent events stream as
+individual records, reusing the request-side sigil discipline:
+
+```
+(Node u "User")           ← a new record matches
+~(Node u "User updated")  ← a matching record was mutated
+!(Node u "User updated")  ← a matching record was retracted
+```
+
+End of subscription = client closes the socket; daemon reaps the
+subscription. No explicit Unsubscribe message.
+
+---
+
+## Connection semantics
+
+- Client and daemon exchange nexus expressions over a stream
+  socket; the parser self-delimits on matched parens.
+- Requests and replies are strictly FIFO ordered on a single
+  connection. No correlation IDs.
+- One subscription per connection. For multiple subscriptions,
+  open multiple connections.
+- Close the socket to end. No graceful-goodbye message.
+
+---
+
 ## Canonical form
 
 Inherited from nota:
@@ -225,8 +271,9 @@ Inherited from nota:
 
 nexus-specific:
 
-- `~`, `@`, `!` sit immediately before their target with no
-  intervening whitespace (`~(Point …)`, `@h`, `!0.0`).
+- `~`, `!`, `?`, `*`, `@` sit immediately before their target
+  with no intervening whitespace (`~(Point …)`, `@h`, `!0.0`,
+  `?(Node …)`, `*(\| Node @id \|)`).
 - `=` in `@a=@b` has no surrounding whitespace.
 - `_` is a bare token in pattern position; not valid as a value.
 
@@ -236,11 +283,10 @@ nexus-specific:
 
 [nexus-serde](https://github.com/LiGoldragon/nexus-serde) implements
 `serde::Serializer` + `serde::Deserializer` for the full grammar.
-Consumer code (e.g. [nexus](https://github.com/LiGoldragon/nexus),
-[nexus-cli](https://github.com/LiGoldragon/nexus-cli)) derives
-serde on message types and round-trips them through nexus text.
+Consumer code derives serde on message types and round-trips them
+through nexus text.
 
-For pure-data configs that don't need the query layer,
+For pure-data configs that don't need the messaging layer,
 [nota-serde](https://github.com/LiGoldragon/nota-serde) is the
 leaner choice. A nota document round-trips through nexus-serde
 too, since the grammar is a strict superset.
@@ -251,7 +297,11 @@ too, since the grammar is a strict superset.
 
 ```
 nexus/
-  README.md            ;; this file — grammar spec
-  flake.nix            ;; dev-shell
+  spec/
+    grammar.md         ;; this file
+    examples/          ;; small example .nexus files
+  src/                 ;; the nexus daemon
+  ARCHITECTURE.md
+  flake.nix
   LICENSE.md
 ```
