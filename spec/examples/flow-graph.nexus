@@ -1,11 +1,10 @@
 ;; flow-graph.nexus — assert + query a small flow-graph using
 ;; signal's first-milestone kinds (Node, Edge, Graph).
 ;;
-;; Per Li 2026-04-25: nexus is the text equivalent of reading a
+;; Per Li 2026-04-26: nexus is the text equivalent of reading a
 ;; known-type binary format. Records are positional, no field
-;; names appear in the text, no Assert wrapper, no quoted-strings
-;; for ident-shaped values. The reader/writer must know the
-;; schema to interpret each record.
+;; names appear in the text, no Assert wrapper. The reader/writer
+;; must know the schema to interpret each record.
 ;;
 ;; Schema (signal/src/flow.rs):
 ;;   Node  { id: String, label: String }
@@ -14,15 +13,15 @@
 ;;
 ;; A bare record at top level IS an assertion. Slots (u64) are
 ;; bare integers. Strings: bare ident-class tokens (camelCase /
-;; kebab-case) emit bare; anything else uses [delimited] form.
+;; kebab-case) emit bare; anything else uses "..." or """...""".
 
 ;; ──────────────── Five Nodes ────────────────
 
-(Node user   [User])
-(Node nexus  [nexus daemon])
-(Node criome [criome daemon])
-(Node lojix  [lojix daemon])
-(Node sema   [sema redb store])
+(Node user   "User")
+(Node nexus  "nexus daemon")
+(Node criome "criome daemon")
+(Node lojix  "lojix daemon")
+(Node sema   "sema redb store")
 
 ;; ──────────────── Four Edges ────────────────
 ;; Slots above were assigned 100..104 by criome at write time;
@@ -30,17 +29,17 @@
 ;; Edge.label is Option<String>: Some(x) is transparent, None is
 ;; written as the literal None.
 
-(Edge 100 101 [nexus text])
-(Edge 101 102 [signal rkyv])
-(Edge 102 104 [writes])
-(Edge 102 103 [lojix-schema])
+(Edge 100 101 "nexus text")
+(Edge 101 102 "signal rkyv")
+(Edge 102 104 "writes")
+(Edge 102 103 "lojix-schema")
 
 ;; ──────────────── The Graph ────────────────
 
-(Graph [criome request flow]
-       <100 101 102 103 104>
-       <200 201 202 203>
-       <>)
+(Graph "criome request flow"
+       [100 101 102 103 104]
+       [200 201 202 203]
+       [])
 
 ;; ──────────────── Queries ────────────────
 
@@ -51,9 +50,9 @@
 ;; come back; the literal 102 anchors `from`.
 (| Edge 102 @to @label |)
 
-;; The Graph by title — bracket-string in pattern position
+;; The Graph by title — quoted-string in pattern position
 ;; matches that exact value.
-(| Graph [criome request flow] @nodes @edges @subgraphs |)
+(| Graph "criome request flow" @nodes @edges @subgraphs |)
 
 ;; ──────────────── Projection ────────────────
 

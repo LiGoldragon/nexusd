@@ -1,5 +1,6 @@
-;; patterns-and-edits.nexus — pattern, bind, mutate, negate,
-;; constrain. Uses the flow-graph schema for continuity.
+;; patterns-and-edits.nexus — pattern, bind, mutate, retract,
+;; validate, subscribe, constrain, atomic batch. Uses the
+;; flow-graph schema for continuity.
 
 ;; ──────────────── Bind aliasing ────────────────
 ;; `@a=@b` aliases two positions; matches if they unify. Useful
@@ -21,27 +22,55 @@
 
 ;; Top-level retract — `!Record` removes the asserted fact:
 ;; (uncomment to actually retract)
-;; !(Node user [User])
+;; !(Node user "User")
 
 ;; ──────────────── Mutate ────────────────
 ;; `~` replaces an existing record with the new content. The
 ;; identity (slot) is preserved; this is a whole-record swap.
 
-~(Node criome [criome daemon — validator + sema])
+~(Node criome "criome daemon — validator + sema")
+
+;; Mutate-with-pattern (subsumes Patch). Keep id, change label:
+
+~(| Node @id _ |) (Node @id "label updated for every match")
+
+;; ──────────────── Validate (dry-run) ────────────────
+;; `?` prefix on any verb turns it into a dry-run. Tells you
+;; whether the assert would succeed without doing it.
+
+?(Node fresh "Fresh node")
+?~(Node criome "would replace criome's label")
+
+;; ──────────────── Subscribe ────────────────
+;; `*` opens a continuous query. The first reply is the snapshot
+;; of current matches; subsequent replies stream as the
+;; match-set changes. One subscription per connection.
+
+*(| Node @id @label |)
 
 ;; ──────────────── Constrain (conjunction) ────────────────
 ;; `{| ... |}` is logical AND across patterns. Shared bind
-;; names unify. Find every Edge whose `from` Node has a label
-;; (so we know what's emitting it):
+;; names unify. Find every Edge whose `from` Node has a label:
 
 {|
   (| Edge @from @to @edge-label |)
   (| Node  @from @from-label |)
 |}
 
-;; ──────────────── Projection over a join ────────────────
+;; Projection over a join:
 
 {|
   (| Edge @from @to @edge-label |)
   (| Node  @to   @to-label |)
 |} { from to to-label edge-label }
+
+;; ──────────────── Atomic batch ────────────────
+;; `[| ... |]` runs multiple edits all-or-nothing. Each item
+;; carries its own verb sigil. Useful when invariants span
+;; multiple records.
+
+[|
+  (Node a "Apple")
+  (Node b "Banana")
+  (Edge 200 201 "neighbour")
+|]
