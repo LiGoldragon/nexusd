@@ -1,12 +1,8 @@
-//! nexus — the nexus-text messenger.
+//! nexus — the nexus-text translator daemon.
 //!
-//! Parses nexus messages over a Unix socket (or stdio), forwards
-//! rkyv criome-messages to criome, relays replies back as nexus
-//! text. Stateless modulo in-flight request correlations — criome
-//! (sema's engine) and lojix (owner of lojix-store) hold the state.
-//!
-//! Library half (protocol contract types) is in
-//! [`crate::cli_msg`]; see `lib.rs` for the layer split.
+//! Listens on a Unix socket, parses incoming nexus text into
+//! signal frames, forwards to criome, renders replies back as
+//! nexus text. Stateless modulo per-connection state.
 
 use nexus::error::Result;
 

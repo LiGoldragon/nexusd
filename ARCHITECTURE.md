@@ -1,24 +1,26 @@
 # ARCHITECTURE — nexus
 
 The nexus language: **spec + translator daemon** in one repo.
-This repo holds:
 
 1. [`spec/grammar.md`](spec/grammar.md) — the canonical nexus
    grammar spec.
-2. `src/` — the daemon binary `nexus`. Speaks nexus text on the
-   client side; speaks signal rkyv on the criome side. Holds
-   **no sema state** — purely a messenger.
+2. [`spec/examples/`](spec/examples/) — illustrative `.nexus`
+   files showing the grammar in use.
+3. `src/` — the daemon binary `nexus`. Speaks **nexus text** on
+   the client side (UDS at `/tmp/nexus.sock`); speaks **signal**
+   (rkyv) on the criome side (UDS at `/tmp/criome.sock`). Holds
+   no sema state — purely a translator.
 
 ```
-client (nexus-cli, agents, editors)
+client (nexus-cli, agents, editors, shell scripts)
    │
-   │ client-msg (rkyv around nexus text + control verbs)
+   │ pure nexus text in / out
    │
    ▼
 ┌──────────┐
 │  nexus   │   parse text via nota-serde-core (Dialect::Nexus)
-│ (daemon) │   translate AST → signal frames
-│          │   relay signal replies back, rendered to text
+│ (daemon) │   build signal frames, send to criome
+│          │   receive signal replies, render to text
 └────┬─────┘
      │
      │ signal (rkyv envelope around language IR)
@@ -33,13 +35,14 @@ Owns (`[lib]` + `[[bin]]` split):
 
 - **The grammar spec** (under [`spec/`](spec/)). Stable;
   changes coordinated with `nota-serde-core`.
-- **lib half** (`src/client_msg/`): the rkyv envelope between
-  *any* client and the daemon. Re-exported so editor LSPs,
-  agent harnesses, and `nexus-cli` all import the same
-  contract types via `nexus::client_msg`.
 - **bin half** (`src/main.rs`): the daemon process — UDS
-  listener, parsing, signal connection to criome, reply
-  serialisation.
+  listener at `/tmp/nexus.sock`, parsing, signal connection
+  to criome, reply rendering.
+- **lib half** (`src/lib.rs` + `src/error.rs`): daemon-
+  specific helpers (errors, daemon-state types). The wire
+  protocol on both sides lives elsewhere — nexus text is
+  defined by the grammar spec; signal frames are defined in
+  the [signal](https://github.com/LiGoldragon/signal) crate.
 - The **mechanical translation rule**: every nexus text
   construct has exactly one signal form, and vice versa.
 
@@ -47,7 +50,7 @@ Does not own:
 
 - Lexer/parser kernel (lives in
   [nota-serde-core](https://github.com/LiGoldragon/nota-serde-core)).
-- The signal envelope (lives in
+- The signal envelope and IR (lives in
   [signal](https://github.com/LiGoldragon/signal)).
 - Sema state — that's criome's exclusive concern.
 - The validator pipeline.
@@ -56,66 +59,59 @@ Does not own:
 
 The nexus daemon is the *only* place where these meet:
 
-| Surface | Direction | Format | Carries |
+| Surface | Direction | Format | Contents |
 |---|---|---|---|
-| **client-msg** | client ↔ nexus | rkyv | nexus text payload + control (Heartbeat / Cancel / Resume / fallback file) |
+| **client-facing** | client ↔ nexus | pure nexus text | the user's nexus expressions in / replies out |
 | **signal** | nexus ↔ criome | rkyv | language IR (Assert / Mutate / Query / Subscribe / …) |
 
-Nexus text is the *only* non-rkyv messaging surface in the
+Nexus text is the only non-signal messaging surface in the
 sema-ecosystem. It is transient — never persisted, never
 rendered outside this daemon.
 
-## Stateless modulo correlations
+## Per-connection state
 
-The daemon holds:
+The daemon holds, per open connection:
 
-- In-flight `correlation_id` ↔ pending-reply mappings.
-- Open subscription streams (one signal frame in, many out).
-- A fallback-file dispatch path when a client socket dies
-  before its reply lands.
+- The negotiated protocol version (from the handshake).
+- Open subscription registration (one subscription per
+  connection; events stream until close).
 
-Nothing else. No sema cache, no record knowledge — kind
-resolution happens at criome.
+Nothing else. No correlation-id mappings (replies pair to
+requests by **position** on the connection — FIFO). No
+fallback-file dispatch. No resume after disconnect (durable
+work is criome-state, fetched via Query). No sema cache.
 
 ## Code map
 
 ```
 nexus/
 ├── spec/
-│   ├── grammar.md                — the nexus grammar spec
-│   └── example.nexus             — illustrative input
+│   ├── grammar.md                — the canonical nexus grammar
+│   └── examples/                 — illustrative .nexus files
 └── src/
-    ├── lib.rs                    — exposes client_msg as a public module
-    ├── main.rs                   — daemon entry, UDS bind, accept loop
-    └── client_msg/               — the lib-half contract
-        ├── mod.rs
-        ├── frame.rs              — Frame envelope, RequestId, encode/decode
-        ├── request.rs            — Request (Send, Heartbeat, Cancel, Resume)
-        ├── reply.rs              — Reply (Ack, Working, Done, Failed,
-        │                            ResumedReply, ResumeNotReady, Cancelled,
-        │                            DoneWithFallback, FailedFallback)
-        ├── fallback.rs           — FallbackSpec, FallbackFormat
-        └── path.rs               — WirePath (raw POSIX bytes)
+    ├── lib.rs                    — daemon library half
+    ├── error.rs                  — daemon error types
+    └── main.rs                   — daemon entry, UDS bind, accept loop
 ```
 
 ## Invariants
 
 - **Text crosses only at this boundary.** All daemon-to-daemon
-  internal traffic is rkyv. No raw nexus text reaches criome.
-- **No state survives a request.** Anything stateful is
-  client-state (held by clients via Resume) or criome-state
-  (held in sema). The daemon holds correlation only.
-- **rkyv 0.8 portable feature set** for client-msg per
-  [mentci/reports/074](https://github.com/LiGoldragon/mentci/blob/main/reports/074-portable-rkyv-discipline.md).
+  internal traffic is signal (rkyv). No raw nexus text reaches
+  criome.
+- **No state survives a request.** Per-connection state dies
+  with the connection; durable state lives in criome's sema.
+- **No correlation IDs.** Position pairs replies to requests.
 
 ## Status
 
-**Skeleton-as-design.** client-msg types + Frame::encode/decode
-shipped; main daemon body lands alongside criome scaffolding.
+**Skeleton-as-design.** Grammar spec is locked; example .nexus
+files exist; daemon body lands alongside criome scaffolding.
 
 ## Cross-cutting context
 
-- Three-layer messaging story (client-msg / signal / criome-
-  net): [mentci/reports/077](https://github.com/LiGoldragon/mentci/blob/main/reports/077-nexus-and-signal.md)
+- Reply protocol: [mentci/reports/083](https://github.com/LiGoldragon/mentci/blob/main/reports/083-the-return-protocol.md)
+- Three-layer messaging story:
+  [mentci/reports/077](https://github.com/LiGoldragon/mentci/blob/main/reports/077-nexus-and-signal.md)
 - Project-wide architecture:
   [criome/ARCHITECTURE.md](https://github.com/LiGoldragon/criome/blob/main/ARCHITECTURE.md)

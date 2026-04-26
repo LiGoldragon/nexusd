@@ -1,25 +1,17 @@
-//! nexus — library half.
+//! nexus — the text-translator daemon library half.
 //!
-//! Two protocol layers sit at nexus's boundaries:
+//! Nexus speaks **nexus text** to clients and **signal** (rkyv)
+//! to criome. Inside the daemon, parsing converts text → signal
+//! frames; rendering converts signal replies → text.
 //!
-//! - [`client_msg`] — the protocol any client (nexus-cli, editor
-//!   LSP, scripts, agents, future tools) speaks to nexus. Carries
-//!   nexus text + a *client-generated* request ID. Heartbeats,
-//!   cancel, resume, fallback-file delivery for disconnected
-//!   requesters. Criomed never sees this layer.
-//! - `criome_msg` — the nexus ↔ criome protocol (rkyv envelopes
-//!   carrying parsed nexus operations). Designed in
-//!   `mentci/reports/070` §6. Will live in its own crate
-//!   `signal` (CANON-MISSING) once that crate is created.
+//! The daemon is stateless modulo per-connection state (negotiated
+//! protocol version + in-flight subscription registration). There
+//! is no correlation-id mapping — replies pair to requests by
+//! position on the connection (FIFO).
 //!
-//! nexus is stateless modulo in-flight request correlations on
-//! both sides. `client_msg` correlates by client-generated
-//! `RequestId`; `signal` correlates by `correlation_id`. The
-//! two ID spaces are independent — nexus maintains the mapping
-//! internally.
-//!
-//! See `mentci/reports/070` and `reports/071` for the full
-//! nexus language design and contract / protocol sketches.
+//! All wire-protocol types live in
+//! [signal](https://github.com/LiGoldragon/signal). This library
+//! holds nexus-daemon-specific helpers (errors, soon: parser
+//! adapter, daemon-state types).
 
-pub mod client_msg;
 pub mod error;
