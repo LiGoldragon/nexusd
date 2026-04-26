@@ -133,6 +133,29 @@ matches any Point and binds `@horizontal` and `@vertical` to the
 actual values. No field names appear in the text other than
 through the `@`-sigil form.
 
+### Binds **must** carry the `@` sigil
+
+Inside a pattern, every bind is `@name`. A bare lowercase
+identifier in a pattern position is *not* an implicit bind — it
+is a bare-string literal matched by value equality (consistent
+with bare-identifier strings elsewhere in nota). The `@` sigil
+exists exactly to disambiguate bind from bare-string in pattern
+position.
+
+```nexus
+(| Tag @name |)         ;; bind: capture whatever string is there
+(| Tag name |)          ;; literal: match only Tags whose value is the string "name"
+(| Point @x @y |)       ;; two binds
+(| Point x y |)         ;; rejected — bare lowercase here would be ambiguous
+                        ;;            (bind? string literal?). Use either
+                        ;;            `@x @y` for binds or `"x" "y"` for
+                        ;;            string literals.
+```
+
+Bind names themselves must be camelCase or kebab-case (lowercase
+or `_` lead). PascalCase after `@` is rejected — `@Foo` is a
+parse error.
+
 ### `@data` for newtype inner
 
 Newtype structs (`struct Id(u32)`) have an unnamed inner value.
