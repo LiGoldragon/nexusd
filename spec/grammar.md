@@ -218,34 +218,49 @@ every item succeeds; on any failure, no item is applied.
 
 ## Reply semantics
 
-Replies use the same syntax as requests, **paired by position**.
-The N-th reply on a connection corresponds to the N-th request.
+Replies are messages — typed records — paired to requests by
+**position**. The N-th reply on a connection corresponds to the
+N-th request. There are no correlation IDs.
+
+Two message kinds carry every reply:
+
+- **`(Ok)`** — success acknowledgement. Empty record, no fields.
+- **`(Diagnostic …)`** — failure with reasons (level, code, site,
+  suggestions).
+
+### Per-verb shapes
 
 | Request | Reply at the same position |
 |---|---|
-| `(R …)` Assert | `(R …)` — the asserted record (with assigned slot) |
-| `~(R …)` Mutate | `~(R …)` — the new record version |
-| `!(R …)` Retract | `!(R …)` — the retracted record (last echo) |
-| `?(R …)` Validate | `?(R …)` — the would-be record |
-| `(\| pat \|)` Query | `[<r1> <r2> …]` — sequence of matches |
-| `[\| ops \|]` Atomic batch | `[\| reply1 reply2 … \|]` — per-op replies |
-| any verb on failure | a `Diagnostic` record |
+| `(R …)` Assert | `(Ok)` on success, `(Diagnostic …)` on failure |
+| `~(R …)` Mutate | `(Ok)` or `(Diagnostic …)` |
+| `!(R …)` Retract | `(Ok)` or `(Diagnostic …)` |
+| `?(R …)` Validate | `(Ok)` if the operation would succeed; `(Diagnostic …)` if it would fail |
+| `~(\| pat \|) (R …)` Mutate-with-pattern | `[(Ok) (Ok) (Diagnostic …) (Ok) …]` — one outcome per matched record |
+| `!(\| pat \|)` Retract-matching | `[(Ok) (Ok) (Diagnostic …) …]` — one outcome per matched record |
+| `(\| pat \|)` Query | `[<r1> <r2> …]` — sequence of matching records (empty `[]` for zero matches) |
+| `[\| op1 op2 … \|]` Atomic batch | `[(Ok) (Ok) (Diagnostic …) (Ok)]` — one outcome per item in the batch; if any element is a `Diagnostic`, the whole batch rolled back atomically |
+
+The reply distinguishes by content: a sequence of `(Ok)` /
+`(Diagnostic)` is an edit-outcome reply; a sequence of records is
+a query reply.
 
 ### Subscriptions
 
 `*(\| pat \|)` opens a subscription. **One subscription per
-connection.** The first reply is `[<snapshot>]` — the initial
-matching set as a sequence. Subsequent events stream as
-individual records, reusing the request-side sigil discipline:
+connection.** The connection enters streaming mode; events arrive
+as they happen, each reusing the request-side sigil discipline:
 
 ```
-(Node u "User")           ← a new record matches
+(Node u "User")           ← a new record matched
 ~(Node u "User updated")  ← a matching record was mutated
 !(Node u "User updated")  ← a matching record was retracted
 ```
 
-End of subscription = client closes the socket; daemon reaps the
-subscription. No explicit Unsubscribe message.
+There is **no initial snapshot** in the subscribe reply — issue a
+separate `(\| pat \|)` Query first if the client wants current
+state. End of subscription = client closes the socket; daemon
+reaps the subscription. No explicit Unsubscribe message.
 
 ---
 
