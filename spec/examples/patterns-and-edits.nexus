@@ -6,7 +6,7 @@
 ;; `@a=@b` aliases two positions; matches if they unify. Useful
 ;; for self-edges (Edge whose `from` equals its `to`):
 
-(| Edge @from=@to @label |)
+(| Edge @from=@to @kind |)
 
 ;; ──────────────── Wildcard ────────────────
 ;; `_` matches anything at that position without binding.
@@ -42,35 +42,40 @@
 ?~(Node criome "would replace criome's label")
 
 ;; ──────────────── Subscribe ────────────────
-;; `*` opens a continuous query. The first reply is the snapshot
-;; of current matches; subsequent replies stream as the
-;; match-set changes. One subscription per connection.
+;; `*` opens a continuous query on this connection. Events stream
+;; from now onward — there is NO initial snapshot. If the client
+;; wants current state, it issues a separate Query first. One
+;; subscription per connection; close the socket to end.
 
 *(| Node @id @label |)
 
 ;; ──────────────── Constrain (conjunction) ────────────────
 ;; `{| ... |}` is logical AND across patterns. Shared bind
-;; names unify. Find every Edge whose `from` Node has a label:
+;; names unify. Find every Edge of kind DependsOn whose `from`
+;; Node has a label:
 
 {|
-  (| Edge @from @to @edge-label |)
+  (| Edge @from @to DependsOn |)
   (| Node  @from @from-label |)
 |}
 
 ;; Projection over a join:
 
 {|
-  (| Edge @from @to @edge-label |)
+  (| Edge @from @to @kind |)
   (| Node  @to   @to-label |)
-|} { from to to-label edge-label }
+|} { from to to-label kind }
 
 ;; ──────────────── Atomic batch ────────────────
 ;; `[| ... |]` runs multiple edits all-or-nothing. Each item
 ;; carries its own verb sigil. Useful when invariants span
-;; multiple records.
+;; multiple records. Edges within the batch reference the
+;; preceding Nodes by their assigned slots (criome assigns slots
+;; in order; for M0 the client must round-trip if it needs the
+;; assigned slots back to compose later edges).
 
 [|
   (Node a Apple)
   (Node b Banana)
-  (Edge 200 201 neighbour)
+  (Edge 200 201 DependsOn)
 |]

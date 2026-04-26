@@ -8,12 +8,16 @@
 ;;
 ;; Schema (signal/src/flow.rs):
 ;;   Node  { id: String, label: String }
-;;   Edge  { from: Slot, to: Slot, label: Option<String> }
+;;   Edge  { from: Slot, to: Slot, kind: RelationKind }
 ;;   Graph { title: String, nodes: Vec<Slot>, edges: Vec<Slot>, subgraphs: Vec<Slot> }
+;;
+;; RelationKind is a closed enum: Flow / DependsOn / Contains /
+;; References / Produces / Consumes / Calls / Implements / IsA.
 ;;
 ;; A bare record at top level IS an assertion. Slots (u64) are
 ;; bare integers. Strings: bare ident-class tokens (camelCase /
 ;; kebab-case) emit bare; anything else uses "..." or """...""".
+;; Unit variants (RelationKind, Option's None, etc.) emit bare.
 
 ;; ──────────────── Five Nodes ────────────────
 
@@ -25,14 +29,13 @@
 
 ;; ──────────────── Four Edges ────────────────
 ;; Slots above were assigned 100..104 by criome at write time;
-;; we reference them as bare integers here.
-;; Edge.label is Option<String>: Some(x) is transparent, None is
-;; written as the literal None.
+;; we reference them as bare integers here. Each Edge picks one
+;; RelationKind variant — bare PascalCase.
 
-(Edge 100 101 "nexus text")
-(Edge 101 102 "signal rkyv")
-(Edge 102 104 writes)
-(Edge 102 103 lojix-schema)
+(Edge 100 101 Flow)        ;; user → nexus: data flows
+(Edge 101 102 Flow)        ;; nexus → criome: data flows
+(Edge 102 104 Produces)    ;; criome → sema: criome produces sema records
+(Edge 102 103 DependsOn)   ;; criome → lojix: criome depends on lojix's services
 
 ;; ──────────────── The Graph ────────────────
 
@@ -46,9 +49,12 @@
 ;; All Nodes; bind id and label by schema-position.
 (| Node @id @label |)
 
-;; Edges leaving slot 102 (criome). The bound `to` and `label`
+;; Edges leaving slot 102 (criome). The bound `to` and `kind`
 ;; come back; the literal 102 anchors `from`.
-(| Edge 102 @to @label |)
+(| Edge 102 @to @kind |)
+
+;; All edges of a specific kind.
+(| Edge @from @to DependsOn |)
 
 ;; The Graph by title — quoted-string in pattern position
 ;; matches that exact value.
