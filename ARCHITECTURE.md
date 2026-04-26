@@ -102,6 +102,18 @@ nexus/
 - **No state survives a request.** Per-connection state dies
   with the connection; durable state lives in criome's sema.
 - **No correlation IDs.** Position pairs replies to requests.
+- **One text construct, one typed value.** The mechanical
+  translation rule is the [perfect-specificity
+  invariant](https://github.com/LiGoldragon/criome/blob/main/ARCHITECTURE.md#invariant-d)
+  seen at the text↔signal boundary. Every nexus text construct
+  names exactly one typed shape; every typed shape has exactly
+  one canonical text rendering. The daemon never instantiates a
+  generic record and figures out its kind later — it parses
+  text directly into the precise typed payload of the verb the
+  text expresses (`AssertOp::Node(node)`, `MutateOp::Edge
+  { slot, new, expected_rev }`, `QueryOp::Graph(GraphQuery{…})`).
+  Failure to parse into a known kind is a parse-time error,
+  not a downstream validation miss.
 
 ## Status
 
