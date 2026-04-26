@@ -19,7 +19,10 @@ grammar. nexus inherits:
 
 - **2 delimiter pairs**: `( )` records, `[ ]` sequences
 - **2 string forms**: `" "` inline, `""" """` multiline
-- **2 sigils**: `;;` line comments, `#` byte-literal prefix
+- **2 sigils**: `;;` line comments, `#` byte-literal prefix.
+  *Comments carry no load-bearing data — the parser discards
+  them. Information that must be communicated has a typed home
+  in the schema.*
 - **3 identifier classes**: PascalCase (types/variants),
   camelCase (fields in schema / instance names), kebab-case
   (titles / tags)
