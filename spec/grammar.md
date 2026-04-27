@@ -116,45 +116,67 @@ unchanged fields:
 
 ---
 
-## Binds — auto-named from schema
+## Binds — names come from the schema, not the author
 
 A bind is a named hole in a pattern. The matcher walks records,
 finds shape-matching ones, and for each match records the actual
 values at bound positions.
 
-The bind's name comes from the schema field at that position:
+### The strict rule
+
+**The bind name at any position MUST equal the schema field name
+at that position.** The author cannot pick a different name. The
+parser rejects any other name with a clear error.
 
 ```nexus
-(| Point @horizontal @vertical |)
+;; struct Point { horizontal: f64, vertical: f64 }
+(| Point @horizontal @vertical |)   ;; ✓ both names match the schema
+(| Point @h @v |)                   ;; ✗ rejected: position 1 expects @horizontal
+(| Point @x @y |)                   ;; ✗ rejected: position 1 expects @horizontal
 ```
 
-For `struct Point { horizontal: f64, vertical: f64 }`, this
-matches any Point and binds `@horizontal` and `@vertical` to the
-actual values. No field names appear in the text other than
-through the `@`-sigil form.
+This is what makes the IR — `PatternField::Bind` — payload-free.
+The bind's "name" lives in the *Query record's field position;
+the text just confirms it. Aliasing (below) is the only way to
+introduce additional names, and even then the *first* name must
+match the schema.
+
+### Why this rule exists
+
+The auto-name rule is a manifestation of the project-wide
+[perfect-specificity invariant](https://github.com/LiGoldragon/criome/blob/main/ARCHITECTURE.md#invariant-d):
+the IR carries no redundant data; field-position carries the
+binding identity; the text is a literal reading of that identity.
+Allowing `@h` for `@horizontal` would fork "what the parser sees"
+from "what the IR records," requiring a mapping table — which is
+exactly the kind of indirection the invariant rules out.
 
 ### Binds **must** carry the `@` sigil
 
-Inside a pattern, every bind is `@name`. A bare lowercase
-identifier in a pattern position is *not* an implicit bind — it
-is a bare-string literal matched by value equality (consistent
-with bare-identifier strings elsewhere in nota). The `@` sigil
-exists exactly to disambiguate bind from bare-string in pattern
-position.
+Inside a pattern, every bind is `@<schema-field-name>`. A bare
+lowercase identifier in a pattern position is *not* an implicit
+bind — it is a bare-string literal matched by value equality
+(consistent with bare-identifier strings elsewhere in nota). The
+`@` sigil exists exactly to disambiguate bind from bare-string in
+pattern position.
 
 ```nexus
-(| Tag @name |)         ;; bind: capture whatever string is there
-(| Tag name |)          ;; literal: match only Tags whose value is the string "name"
-(| Point @x @y |)       ;; two binds
-(| Point x y |)         ;; rejected — bare lowercase here would be ambiguous
-                        ;;            (bind? string literal?). Use either
-                        ;;            `@x @y` for binds or `"x" "y"` for
-                        ;;            string literals.
+(| Tag @name |)        ;; ✓ bind on the `name` field; captures the string
+(| Tag name |)         ;; ✓ literal: match Tags whose `name` field equals "name"
+(| Tag wrongname |)    ;; ✓ literal: match Tags whose `name` field equals "wrongname"
+(| Tag @wrongname |)   ;; ✗ rejected — schema field is `name`, not `wrongname`
 ```
 
-Bind names themselves must be camelCase or kebab-case (lowercase
-or `_` lead). PascalCase after `@` is rejected — `@Foo` is a
-parse error.
+### Bind name lexical class
+
+Bind names — being schema field names — are camelCase or
+kebab-case (lowercase or `_` lead). PascalCase is reserved for
+type/variant names; `@Foo` is a parse error.
+
+```nexus
+(| Edge @from @to @kind |)   ;; ✓ all three field names are lowercase
+(| Edge @From @to @kind |)   ;; ✗ @From — uppercase leader is illegal
+```
 
 ### `@data` for newtype inner
 

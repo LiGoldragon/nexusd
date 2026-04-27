@@ -21,6 +21,8 @@ thiserror = "2"
 ractor = "0.15"
 uuid = { version = "1", features = ["v7"] }
 rkyv = { version = "0.8", default-features = false, features = ["std", "bytecheck", "little_endian", "pointer_width_32", "unaligned"] }
+signal = { git = "https://github.com/LiGoldragon/signal", branch = "main" }
+nota-serde-core = { git = "https://github.com/LiGoldragon/nota-serde-core", branch = "main" }
 
 [lints.rust]
 unused = "allow"

@@ -15,3 +15,7 @@
 //! adapter, daemon-state types).
 
 pub mod error;
+pub mod parse;
+
+pub use error::{Error, Result};
+pub use parse::QueryParser;
