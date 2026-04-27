@@ -1,0 +1,134 @@
+//! Parser tests — text → `signal::Request`.
+//!
+//! These exercise the public Parser API end-to-end. The
+//! shuttle (UDS / criome connection) is tested separately;
+//! these tests stay in-process and assert on the parsed
+//! `Request` shape.
+
+use nexus::Parser;
+use signal::{
+    AssertOperation, Edge, Node, PatternField, QueryOperation, RelationKind, Request, Slot,
+};
+
+#[test]
+fn empty_input_returns_none() {
+    let mut parser = Parser::new("");
+    let result = parser.next_request().expect("empty parse must succeed");
+    assert!(result.is_none(), "empty input must yield None");
+}
+
+#[test]
+fn whitespace_only_input_returns_none() {
+    let mut parser = Parser::new("   \n\n  ;; just a comment\n   ");
+    let result = parser.next_request().expect("whitespace parse must succeed");
+    assert!(result.is_none(), "whitespace + comments must yield None");
+}
+
+#[test]
+fn parses_assert_node() {
+    let mut parser = Parser::new(r#"(Node "User")"#);
+    let request = parser
+        .next_request()
+        .expect("Assert parse must succeed")
+        .expect("must yield a request");
+    assert_eq!(
+        request,
+        Request::Assert(AssertOperation::Node(Node { name: "User".to_string() }))
+    );
+    assert!(parser.next_request().expect("EOF").is_none());
+}
+
+#[test]
+fn parses_assert_edge_with_relation_kind() {
+    let mut parser = Parser::new("(Edge 100 200 DependsOn)");
+    let request = parser
+        .next_request()
+        .expect("Assert Edge parse must succeed")
+        .expect("must yield a request");
+    assert_eq!(
+        request,
+        Request::Assert(AssertOperation::Edge(Edge {
+            from: Slot::from(100u64),
+            to: Slot::from(200u64),
+            kind: RelationKind::DependsOn,
+        }))
+    );
+}
+
+#[test]
+fn parses_query_node_with_bind() {
+    let mut parser = Parser::new("(| Node @name |)");
+    let request = parser
+        .next_request()
+        .expect("Query parse must succeed")
+        .expect("must yield a request");
+    match request {
+        Request::Query(QueryOperation::Node(node_query)) => {
+            assert!(matches!(node_query.name, PatternField::Bind));
+        }
+        other => panic!("expected Query::Node with bind, got {other:?}"),
+    }
+}
+
+#[test]
+fn parses_two_requests_in_sequence() {
+    let mut parser = Parser::new(r#"(Node "User") (| Node @name |)"#);
+
+    let first = parser.next_request().expect("first").expect("yields");
+    assert!(matches!(first, Request::Assert(AssertOperation::Node(_))));
+
+    let second = parser.next_request().expect("second").expect("yields");
+    assert!(matches!(second, Request::Query(QueryOperation::Node(_))));
+
+    assert!(parser.next_request().expect("EOF").is_none());
+}
+
+#[test]
+fn unsupported_verb_tilde_returns_verb_not_in_m0_scope() {
+    let mut parser = Parser::new(r#"~(Node "User")"#);
+    let result = parser.next_request();
+    assert!(matches!(
+        result,
+        Err(nexus::Error::VerbNotInM0Scope { verb: "Mutate" })
+    ));
+}
+
+#[test]
+fn unsupported_verb_bang_returns_verb_not_in_m0_scope() {
+    let mut parser = Parser::new(r#"!(Node "User")"#);
+    let result = parser.next_request();
+    assert!(matches!(
+        result,
+        Err(nexus::Error::VerbNotInM0Scope { verb: "Retract" }),
+    ));
+}
+
+#[test]
+fn unsupported_verb_question_returns_verb_not_in_m0_scope() {
+    let mut parser = Parser::new(r#"?(Node "User")"#);
+    let result = parser.next_request();
+    assert!(matches!(
+        result,
+        Err(nexus::Error::VerbNotInM0Scope { verb: "Validate" }),
+    ));
+}
+
+#[test]
+fn unsupported_verb_star_returns_verb_not_in_m0_scope() {
+    let mut parser = Parser::new("*(| Node @name |)");
+    let result = parser.next_request();
+    assert!(matches!(
+        result,
+        Err(nexus::Error::VerbNotInM0Scope { verb: "Subscribe" }),
+    ));
+}
+
+#[test]
+fn unsupported_verb_atomic_batch_returns_verb_not_in_m0_scope() {
+    let mut parser = Parser::new(r#"[| (Node "A") (Node "B") |]"#);
+    let result = parser.next_request();
+    assert!(matches!(
+        result,
+        Err(nexus::Error::VerbNotInM0Scope { verb: "AtomicBatch" }),
+    ));
+}

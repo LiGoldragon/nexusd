@@ -1,10 +1,9 @@
-//! Daemon-specific errors. Most parse-side errors used to live
-//! here for the hand-written QueryParser; that parser was
-//! deleted when [`nota_codec`]'s `NexusPattern` derive landed.
-//! The remaining variants cover daemon-process errors (i/o,
-//! handshake-rejection, criome-side dispatch failures); the
-//! codec carries its own typed `nota_codec::Error` for
-//! parse/encode failures.
+//! Daemon-side errors. Parse-time errors carry through from
+//! [`nota_codec::Error`]; wire-frame decode errors from
+//! [`signal::FrameDecodeError`]; i/o from [`std::io::Error`].
+//! Daemon-specific failure modes (frames too large for the
+//! length prefix, criome rejecting the handshake, an unsupported
+//! verb in M0) get their own typed variants.
 
 use thiserror::Error;
 
@@ -18,6 +17,18 @@ pub enum Error {
 
     #[error("frame decode: {0}")]
     Frame(#[from] signal::FrameDecodeError),
+
+    #[error("frame {length} bytes exceeds the 4-byte length-prefix maximum (u32::MAX)")]
+    FrameTooLarge { length: usize },
+
+    #[error("criome rejected the handshake: {reason:?}")]
+    HandshakeRejected { reason: signal::HandshakeRejectionReason },
+
+    #[error("criome returned an unexpected reply shape after handshake — got `{got}`, expected `HandshakeAccepted` / `HandshakeRejected`")]
+    HandshakePostReplyShape { got: &'static str },
+
+    #[error("nexus verb `{verb}` is not in the M0 parser scope (Assert and Query only)")]
+    VerbNotInM0Scope { verb: &'static str },
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
