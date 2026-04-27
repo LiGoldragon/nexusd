@@ -18,12 +18,12 @@ client (nexus-cli, agents, editors, shell scripts)
    │
    ▼
 ┌──────────┐
-│  nexus   │   parse text via nota-serde-core (Dialect::Nexus)
+│  nexus   │   parse text via nota-codec (Decoder::nexus)
 │ (daemon) │   build signal frames, send to criome
-│          │   receive signal replies, render to text
+│          │   receive signal replies, render to text via nota-codec (Encoder::nexus)
 └────┬─────┘
      │
-     │ signal (rkyv envelope around language IR)
+     │ signal (rkyv envelope around per-verb typed payloads)
      │
      ▼
    criome
@@ -34,27 +34,29 @@ client (nexus-cli, agents, editors, shell scripts)
 Owns (`[lib]` + `[[bin]]` split):
 
 - **The grammar spec** (under [`spec/`](spec/)). Stable;
-  changes coordinated with `nota-serde-core`.
+  changes coordinated with
+  [nota-codec](https://github.com/LiGoldragon/nota-codec).
 - **bin half** (`src/main.rs`): the daemon process — UDS
   listener at `/tmp/nexus.sock`, parsing, signal connection
   to criome, reply rendering.
-- **lib half** (`src/lib.rs` + `src/error.rs` + `src/parse.rs`):
-  daemon-specific helpers — errors, daemon-state types, and
-  the [`QueryParser`](src/parse.rs) that turns nexus query
-  text (`(| Kind ... |)`) into typed `signal::QueryOp` values.
-  The wire protocol on both sides lives elsewhere — nexus
-  text is defined by the grammar spec; signal frames are
-  defined in the [signal](https://github.com/LiGoldragon/signal)
-  crate.
+- **lib half** (`src/lib.rs` + `src/error.rs`): daemon-specific
+  helpers — typed errors and (soon) connection-state types
+  + a request-routing actor.
 - The **mechanical translation rule**: every nexus text
   construct has exactly one signal form, and vice versa.
 
 Does not own:
 
-- Lexer/parser kernel (lives in
-  [nota-serde-core](https://github.com/LiGoldragon/nota-serde-core)).
-- The signal envelope and IR (lives in
-  [signal](https://github.com/LiGoldragon/signal)).
+- Lexer / Decoder / Encoder kernel — lives in
+  [nota-codec](https://github.com/LiGoldragon/nota-codec).
+  Per-kind parsing of records, pattern records, verbs, and
+  primitives is performed by the derives in
+  [nota-derive](https://github.com/LiGoldragon/nota-derive)
+  (`NotaRecord`, `NotaEnum`, `NotaTransparent`,
+  `NotaTryTransparent`, `NexusPattern`, `NexusVerb`) which
+  signal types apply.
+- The signal envelope and per-verb typed IR — lives in
+  [signal](https://github.com/LiGoldragon/signal).
 - Sema state — that's criome's exclusive concern.
 - The validator pipeline.
 
@@ -65,7 +67,7 @@ The nexus daemon is the *only* place where these meet:
 | Surface | Direction | Format | Contents |
 |---|---|---|---|
 | **client-facing** | client ↔ nexus | pure nexus text | the user's nexus expressions in / replies out |
-| **signal** | nexus ↔ criome | rkyv | language IR (Assert / Mutate / Query / Subscribe / …) |
+| **signal** | nexus ↔ criome | rkyv | language IR (`AssertOperation` / `MutateOperation` / `QueryOperation` / `Subscribe` / …) |
 
 Nexus text is the only non-signal messaging surface in the
 sema-ecosystem. It is transient — never persisted, never
@@ -93,21 +95,17 @@ nexus/
 │   └── examples/                 — illustrative .nexus files
 └── src/
     ├── lib.rs                    — daemon library half + re-exports
-    ├── error.rs                  — daemon error types
-    ├── parse.rs                  — QueryParser (text → signal::QueryOp;
-    │                              hand-written for `(| Kind ... |)`
-    │                              with per-kind PatternField parsing
-    │                              and bind-name validation against the
-    │                              schema field name)
+    ├── error.rs                  — typed daemon-process errors
+    │                              (Io / Codec [from nota_codec::Error] /
+    │                               Frame [from signal::FrameDecodeError])
     └── main.rs                   — daemon entry: UDS bind on
                                     /tmp/nexus.sock, accept loop,
                                     per-connection signal client to criome
 ```
 
-`tests/parse.rs` (24 tests) exercises QueryParser end-to-end
-across all four kinds × all three PatternField variants plus
-the negative cases (wrong bind name, unknown kind, unclosed
-query, etc.).
+The previous `src/parse.rs` (the hand-written `QueryParser`)
+was deleted when nota-codec's `NexusPattern` derive landed.
+The same dispatch happens automatically per `*Query` type.
 
 ## Invariants
 
@@ -122,18 +120,24 @@ query, etc.).
   invariant](https://github.com/LiGoldragon/criome/blob/main/ARCHITECTURE.md#invariant-d)
   seen at the text↔signal boundary. Every nexus text construct
   names exactly one typed shape; every typed shape has exactly
-  one canonical text rendering. The daemon never instantiates a
-  generic record and figures out its kind later — it parses
-  text directly into the precise typed payload of the verb the
-  text expresses (`AssertOp::Node(node)`, `MutateOp::Edge
-  { slot, new, expected_rev }`, `QueryOp::Graph(GraphQuery{…})`).
-  Failure to parse into a known kind is a parse-time error,
-  not a downstream validation miss.
+  one canonical text rendering. The daemon never instantiates
+  a generic record and figures out its kind later — it parses
+  text directly into the precise typed payload of the verb
+  the text expresses (`AssertOperation::Node(node)`,
+  `MutateOperation::Edge { slot, new, expected_rev }`,
+  `QueryOperation::Graph(GraphQuery{…})`). Failure to parse
+  into a known kind is a parse-time error, not a downstream
+  validation miss.
 
 ## Status
 
-**Skeleton-as-design.** Grammar spec is locked; example .nexus
-files exist; daemon body lands alongside criome scaffolding.
+**Skeleton.** Grammar spec is locked; example .nexus files
+exist; daemon body (UDS bind + per-connection text shuttle +
+paired criome connection + reply rendering) lands alongside
+the criome body — see
+[mentci/reports/089 step 5](https://github.com/LiGoldragon/mentci/blob/main/reports/089-m0-implementation-plan-step-3-onwards.md).
+The codec primitives and derives are ready; the daemon body
+just wires them up.
 
 ## Cross-cutting context
 
@@ -141,3 +145,6 @@ files exist; daemon body lands alongside criome scaffolding.
   [criome/ARCHITECTURE.md](https://github.com/LiGoldragon/criome/blob/main/ARCHITECTURE.md)
 - Signal (the rkyv form on the criome leg):
   [signal/ARCHITECTURE.md](https://github.com/LiGoldragon/signal/blob/main/ARCHITECTURE.md)
+- nota-codec (text codec used both for parsing client requests
+  and rendering replies):
+  [nota-codec/ARCHITECTURE.md](https://github.com/LiGoldragon/nota-codec/blob/main/ARCHITECTURE.md)
