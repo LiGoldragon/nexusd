@@ -19,7 +19,7 @@
 //! [grammar]: https://github.com/LiGoldragon/nexus/blob/main/spec/grammar.md
 //! [invariant-d]: https://github.com/LiGoldragon/criome/blob/main/ARCHITECTURE.md#invariant-d
 
-use nota_serde_core::{Lexer, Token};
+use nota_serde_core::{is_lowercase_identifier, is_pascal_case, Lexer, Token};
 use signal::{
     EdgeQuery, GraphQuery, KindDeclQuery, NodeQuery, PatternField, QueryOp, RelationKind, Slot,
 };
@@ -155,7 +155,16 @@ impl<'input> QueryParser<'input> {
                 Ok(PatternField::Bind)
             }
             Some(Token::Ident(variant_name)) => {
-                let variant = relation_kind_from_variant_name(&variant_name)?;
+                let variant = RelationKind::from_variant_name(&variant_name).ok_or_else(|| {
+                    Error::UnknownRelationKindVariant {
+                        expected_variants: RelationKind::ALL
+                            .iter()
+                            .map(|kind| kind.variant_name())
+                            .collect::<Vec<_>>()
+                            .join("|"),
+                        got: variant_name.clone(),
+                    }
+                })?;
                 Ok(PatternField::Match(variant))
             }
             other => Err(Error::ExpectedPatternField {
@@ -217,7 +226,7 @@ impl<'input> QueryParser<'input> {
     }
 }
 
-// ─── small private helpers ─────────────────────────────────────
+// ─── small private helper ─────────────────────────────────────
 
 fn check_bind_name(got: &str, expected_field_name: &str) -> Result<()> {
     if got == expected_field_name {
@@ -228,32 +237,4 @@ fn check_bind_name(got: &str, expected_field_name: &str) -> Result<()> {
             got_bind_name: got.to_string(),
         })
     }
-}
-
-fn relation_kind_from_variant_name(variant_name: &str) -> Result<RelationKind> {
-    match variant_name {
-        "Flow" => Ok(RelationKind::Flow),
-        "DependsOn" => Ok(RelationKind::DependsOn),
-        "Contains" => Ok(RelationKind::Contains),
-        "References" => Ok(RelationKind::References),
-        "Produces" => Ok(RelationKind::Produces),
-        "Consumes" => Ok(RelationKind::Consumes),
-        "Calls" => Ok(RelationKind::Calls),
-        "Implements" => Ok(RelationKind::Implements),
-        "IsA" => Ok(RelationKind::IsA),
-        other => Err(Error::UnknownRelationKindVariant {
-            expected_variants:
-                "Flow|DependsOn|Contains|References|Produces|Consumes|Calls|Implements|IsA"
-                    .to_string(),
-            got: other.to_string(),
-        }),
-    }
-}
-
-fn is_pascal_case(text: &str) -> bool {
-    matches!(text.chars().next(), Some(first) if first.is_ascii_uppercase())
-}
-
-fn is_lowercase_identifier(text: &str) -> bool {
-    matches!(text.chars().next(), Some(first) if first.is_ascii_lowercase() || first == '_')
 }

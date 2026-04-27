@@ -549,7 +549,7 @@ dependencies = [
 [[package]]
 name = "nota-serde-core"
 version = "0.1.0"
-source = "git+https://github.com/LiGoldragon/nota-serde-core?branch=main#19c8d2248f1eb18bbbdc75c9b3daeb7730abfc45"
+source = "git+https://github.com/LiGoldragon/nota-serde-core?branch=main#31125805e58c74d1d2ac510fee1f8dd96bcfd01c"
 dependencies = [
  "serde",
  "thiserror",
@@ -787,7 +787,7 @@ checksum = "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64"
 [[package]]
 name = "signal"
 version = "0.1.0"
-source = "git+https://github.com/LiGoldragon/signal?branch=main#ed0931983d939a9e9187a440e19cf2bde290fdf2"
+source = "git+https://github.com/LiGoldragon/signal?branch=main#f80801e0e1434a1cae69f385eaa6822ffca2d389"
 dependencies = [
  "blake3",
  "rkyv",
