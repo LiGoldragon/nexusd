@@ -22,10 +22,10 @@ async fn main() -> Result<()> {
         .unwrap_or_else(|_| DEFAULT_CRIOME_SOCKET.to_string())
         .into();
 
-    eprintln!("nexus: forwarding to criome at {}", criome_socket_path.display());
-    eprintln!("nexus: binding UDS at {}", listen_path.display());
+    eprintln!("nexus-daemon: forwarding to criome at {}", criome_socket_path.display());
+    eprintln!("nexus-daemon: binding UDS at {}", listen_path.display());
     let daemon = Daemon::new(listen_path, criome_socket_path);
 
-    eprintln!("nexus: ready");
+    eprintln!("nexus-daemon: ready");
     daemon.run().await
 }

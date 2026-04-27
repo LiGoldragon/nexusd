@@ -12,7 +12,7 @@ name = "nexus"
 path = "src/lib.rs"
 
 [[bin]]
-name = "nexus"
+name = "nexus-daemon"
 path = "src/main.rs"
 
 [dependencies]
