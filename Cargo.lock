@@ -538,7 +538,7 @@ name = "nexus"
 version = "0.1.0"
 dependencies = [
  "clap",
- "nota-serde-core",
+ "nota-codec",
  "ractor",
  "rkyv",
  "signal",
@@ -547,12 +547,23 @@ dependencies = [
 ]
 
 [[package]]
-name = "nota-serde-core"
+name = "nota-codec"
 version = "0.1.0"
-source = "git+https://github.com/LiGoldragon/nota-serde-core?branch=main#31125805e58c74d1d2ac510fee1f8dd96bcfd01c"
+source = "git+https://github.com/LiGoldragon/nota-codec?branch=main#90bb518fb6fc5447dc34db53c432a461ff6c960a"
 dependencies = [
- "serde",
+ "nota-derive",
+ "rkyv",
  "thiserror",
+]
+
+[[package]]
+name = "nota-derive"
+version = "0.1.0"
+source = "git+https://github.com/LiGoldragon/nota-derive.git?rev=96633b7d7bd0fb6204d301401b4c08505277bf53#96633b7d7bd0fb6204d301401b4c08505277bf53"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]

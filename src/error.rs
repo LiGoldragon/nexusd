@@ -1,3 +1,11 @@
+//! Daemon-specific errors. Most parse-side errors used to live
+//! here for the hand-written QueryParser; that parser was
+//! deleted when [`nota_codec`]'s `NexusPattern` derive landed.
+//! The remaining variants cover daemon-process errors (i/o,
+//! handshake-rejection, criome-side dispatch failures); the
+//! codec carries its own typed `nota_codec::Error` for
+//! parse/encode failures.
+
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -5,41 +13,11 @@ pub enum Error {
     #[error("i/o: {0}")]
     Io(#[from] std::io::Error),
 
-    #[error("lexer: {0}")]
-    Lex(String),
+    #[error("nota-codec: {0}")]
+    Codec(#[from] nota_codec::Error),
 
-    #[error("expected token {expected}, got {got}")]
-    UnexpectedToken { expected: String, got: String },
-
-    #[error("expected end of input, got {got}")]
-    TrailingTokens { got: String },
-
-    #[error("expected PascalCase identifier (type or variant name), got {got}")]
-    ExpectedPascalIdentifier { got: String },
-
-    #[error("expected lowercase identifier (camelCase or kebab-case), got {got}")]
-    ExpectedLowercaseIdentifier { got: String },
-
-    #[error("unknown record kind in query: {kind_name}")]
-    UnknownQueryKind { kind_name: String },
-
-    #[error("expected pattern field at this position (one of `_`, `@<field-name>`, or a literal value), got {got}")]
-    ExpectedPatternField { got: String },
-
-    #[error(
-        "bind name mismatch: position expected `@{expected_field_name}` (the schema field name); got `@{got_bind_name}`. \
-         Bind names MUST equal the schema field name at that position — see nexus/spec/grammar.md §Binds."
-    )]
-    WrongBindName {
-        expected_field_name: String,
-        got_bind_name: String,
-    },
-
-    #[error("expected variant name (one of {expected_variants}), got `{got}`")]
-    UnknownRelationKindVariant {
-        expected_variants: String,
-        got: String,
-    },
+    #[error("frame decode: {0}")]
+    Frame(#[from] signal::FrameDecodeError),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

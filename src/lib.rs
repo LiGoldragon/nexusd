@@ -10,12 +10,12 @@
 //! position on the connection (FIFO).
 //!
 //! All wire-protocol types live in
-//! [signal](https://github.com/LiGoldragon/signal). This library
-//! holds nexus-daemon-specific helpers (errors, soon: parser
-//! adapter, daemon-state types).
+//! [signal](https://github.com/LiGoldragon/signal). The
+//! parser/encoder primitives live in
+//! [nota-codec](https://github.com/LiGoldragon/nota-codec).
+//! This library holds nexus-daemon-specific helpers (errors,
+//! soon: connection-state types, request-routing actor).
 
 pub mod error;
-pub mod parse;
 
 pub use error::{Error, Result};
-pub use parse::QueryParser;
