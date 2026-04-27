@@ -38,11 +38,14 @@ Owns (`[lib]` + `[[bin]]` split):
 - **bin half** (`src/main.rs`): the daemon process — UDS
   listener at `/tmp/nexus.sock`, parsing, signal connection
   to criome, reply rendering.
-- **lib half** (`src/lib.rs` + `src/error.rs`): daemon-
-  specific helpers (errors, daemon-state types). The wire
-  protocol on both sides lives elsewhere — nexus text is
-  defined by the grammar spec; signal frames are defined in
-  the [signal](https://github.com/LiGoldragon/signal) crate.
+- **lib half** (`src/lib.rs` + `src/error.rs` + `src/parse.rs`):
+  daemon-specific helpers — errors, daemon-state types, and
+  the [`QueryParser`](src/parse.rs) that turns nexus query
+  text (`(| Kind ... |)`) into typed `signal::QueryOp` values.
+  The wire protocol on both sides lives elsewhere — nexus
+  text is defined by the grammar spec; signal frames are
+  defined in the [signal](https://github.com/LiGoldragon/signal)
+  crate.
 - The **mechanical translation rule**: every nexus text
   construct has exactly one signal form, and vice versa.
 
@@ -89,10 +92,22 @@ nexus/
 │   ├── grammar.md                — the canonical nexus grammar
 │   └── examples/                 — illustrative .nexus files
 └── src/
-    ├── lib.rs                    — daemon library half
+    ├── lib.rs                    — daemon library half + re-exports
     ├── error.rs                  — daemon error types
-    └── main.rs                   — daemon entry, UDS bind, accept loop
+    ├── parse.rs                  — QueryParser (text → signal::QueryOp;
+    │                              hand-written for `(| Kind ... |)`
+    │                              with per-kind PatternField parsing
+    │                              and bind-name validation against the
+    │                              schema field name)
+    └── main.rs                   — daemon entry: UDS bind on
+                                    /tmp/nexus.sock, accept loop,
+                                    per-connection signal client to criome
 ```
+
+`tests/parse.rs` (24 tests) exercises QueryParser end-to-end
+across all four kinds × all three PatternField variants plus
+the negative cases (wrong bind name, unknown kind, unclosed
+query, etc.).
 
 ## Invariants
 
