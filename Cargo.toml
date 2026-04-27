@@ -15,6 +15,14 @@ path = "src/lib.rs"
 name = "nexus-daemon"
 path = "src/main.rs"
 
+[[bin]]
+name = "nexus-parse"
+path = "src/bin/parse.rs"
+
+[[bin]]
+name = "nexus-render"
+path = "src/bin/render.rs"
+
 [dependencies]
 thiserror  = "2"
 tokio      = { version = "1", features = ["rt-multi-thread", "macros", "io-util", "net"] }
