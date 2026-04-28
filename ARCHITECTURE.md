@@ -106,7 +106,7 @@ nexus/
     ├── criome_link.rs            — CriomeLink struct: post-handshake signal connection (single-owner, not an actor)
     ├── parser.rs                 — Parser struct: text → signal::Request (sigil/delimiter dispatch)
     ├── renderer.rs               — Renderer struct: signal::Reply → text (per-variant dispatch)
-    ├── main.rs                   — nexus-daemon entry: env config, Daemon::start, await join handle
+    ├── main.rs                   — nexus-daemon entry: env config, Actor::spawn root Daemon, await join handle
     └── bin/
         ├── parse.rs              — nexus-parse: stdin text → length-prefixed Frame on stdout
         └── render.rs             — nexus-render: length-prefixed Frame on stdin → text on stdout

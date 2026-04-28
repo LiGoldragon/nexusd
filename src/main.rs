@@ -9,6 +9,8 @@
 
 use std::path::PathBuf;
 
+use ractor::Actor;
+
 use nexus::daemon::{Arguments, Daemon};
 use nexus::{Error, Result};
 
@@ -27,8 +29,13 @@ async fn main() -> Result<()> {
     eprintln!("nexus-daemon: forwarding to criome at {}", criome_socket_path.display());
     eprintln!("nexus-daemon: binding UDS at {}", socket_path.display());
 
-    let (_daemon_ref, daemon_handle) =
-        Daemon::start(Arguments { socket_path, criome_socket_path }).await?;
+    let (_daemon_ref, daemon_handle) = Actor::spawn(
+        Some("daemon".into()),
+        Daemon,
+        Arguments { socket_path, criome_socket_path },
+    )
+    .await
+    .map_err(|error| Error::ActorSpawn(error.to_string()))?;
 
     eprintln!("nexus-daemon: ready");
     daemon_handle

@@ -4,13 +4,14 @@
 //! holds its `ActorRef` for graceful-shutdown propagation.
 //! The Daemon itself receives no user messages — it only
 //! exists to own the supervision relationship and respond to
-//! a `Stop` request from `main` (e.g., on SIGTERM).
+//! a `Stop` request from `main` (e.g., on SIGTERM). Bring it
+//! up via `Actor::spawn(Some("daemon".into()), Daemon, args)`
+//! at the binary entry point — see `bin/main.rs`.
 
 use std::path::PathBuf;
 
 use ractor::{Actor, ActorProcessingErr, ActorRef};
 
-use crate::error::{Error, Result};
 use crate::listener;
 
 pub struct Daemon;
@@ -25,21 +26,6 @@ pub struct Arguments {
 }
 
 pub enum Message {}
-
-impl Daemon {
-    /// Bring up the full supervision tree against `arguments`,
-    /// returning the root daemon's [`ActorRef`] +
-    /// [`tokio::task::JoinHandle`]. `main` typically constructs
-    /// Arguments from env vars and awaits the join handle.
-    pub async fn start(
-        arguments: Arguments,
-    ) -> Result<(ActorRef<Message>, tokio::task::JoinHandle<()>)> {
-        let (daemon_ref, daemon_handle) = Actor::spawn(Some("daemon".into()), Daemon, arguments)
-            .await
-            .map_err(|error| Error::ActorSpawn(error.to_string()))?;
-        Ok((daemon_ref, daemon_handle))
-    }
-}
 
 #[ractor::async_trait]
 impl Actor for Daemon {
