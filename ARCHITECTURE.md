@@ -98,22 +98,36 @@ nexus/
 │   ├── grammar.md                — the canonical nexus grammar
 │   └── examples/                 — illustrative .nexus files
 └── src/
-    ├── lib.rs                    — re-exports of the daemon nouns
-    ├── error.rs                  — typed daemon-process errors
-    ├── daemon.rs                 — Daemon noun: bind, accept loop, spawn Connection per client
-    ├── connection.rs             — Connection noun: per-client text-shuttle session
-    ├── criome_link.rs            — CriomeLink noun: post-handshake signal connection
-    ├── parser.rs                 — Parser noun: text → signal::Request (sigil/delimiter dispatch)
-    ├── renderer.rs               — Renderer noun: signal::Reply → text (per-variant dispatch)
-    ├── main.rs                   — nexus-daemon entry: env config, run Daemon
+    ├── lib.rs                    — re-exports + supervision-tree doc
+    ├── error.rs                  — typed daemon-process errors (incl. ActorCall, ActorSpawn)
+    ├── daemon.rs                 — Daemon actor: root of the supervision tree; spawns Listener
+    ├── listener.rs               — Listener actor: UDS accept loop, spawns Connection per accept
+    ├── connection.rs             — Connection actor: per-client text shuttle (single-message Run lifecycle)
+    ├── criome_link.rs            — CriomeLink struct: post-handshake signal connection (single-owner, not an actor)
+    ├── parser.rs                 — Parser struct: text → signal::Request (sigil/delimiter dispatch)
+    ├── renderer.rs               — Renderer struct: signal::Reply → text (per-variant dispatch)
+    ├── main.rs                   — nexus-daemon entry: env config, Daemon::start, await join handle
     └── bin/
         ├── parse.rs              — nexus-parse: stdin text → length-prefixed Frame on stdout
         └── render.rs             — nexus-render: length-prefixed Frame on stdin → text on stdout
 ```
 
-The previous `src/parse.rs` (the hand-written `QueryParser`)
-was deleted when nota-codec's `NexusPattern` derive landed.
-The same dispatch happens automatically per `*Query` type.
+The supervision tree:
+
+```text
+Daemon (root)
+  └── Listener
+        ├── Connection × M  (one per accepted UDS client)
+        └── ...
+```
+
+Per-actor file shape — each actor file exports `<Actor>` (ZST
+behaviour marker) + `State` + `Arguments` + `Message`. Parser,
+Renderer, and CriomeLink stay plain structs (single-owner,
+non-concurrent — they're stateless transformers / one-call-at-a-time
+sessions, not components warranting their own mailboxes). The
+ractor framework is the project default for components with
+state and a message protocol — see [`tools-documentation/rust/ractor.md`](https://github.com/LiGoldragon/tools-documentation/blob/main/rust/ractor.md).
 
 ## Invariants
 
@@ -139,13 +153,13 @@ The same dispatch happens automatically per `*Query` type.
 
 ## Status
 
-**Skeleton.** Grammar spec is locked; example .nexus files
-exist; daemon body (UDS bind + per-connection text shuttle +
-paired criome connection + reply rendering) lands alongside
-the criome body — see
-[mentci/reports/089 step 5](https://github.com/LiGoldragon/mentci/blob/main/reports/089-m0-implementation-plan-step-3-onwards.md).
-The codec primitives and derives are ready; the daemon body
-just wires them up.
+**M0 working.** Daemon is ractor-hosted and verified end-to-end
+through `mentci-integration` (text in via `nexus-cli` → signal to
+criome → reply rendered to text → delivered to client). The full
+demo `(Node "User")` → `(Ok)` and `(| Node @name |)` →
+`[(Node "User")]` shuttles correctly through both daemons. M1+
+streaming framing and M2+ subscription support land as additive
+`Message` variants on the Connection actor.
 
 ## Cross-cutting context
 
