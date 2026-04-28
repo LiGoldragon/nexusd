@@ -6,10 +6,14 @@ The nexus language: **spec + translator daemon** in one repo.
    grammar spec.
 2. [`spec/examples/`](spec/examples/) — illustrative `.nexus`
    files showing the grammar in use.
-3. `src/` — the daemon binary `nexus`. Speaks **nexus text** on
-   the client side (UDS at `/tmp/nexus.sock`); speaks **signal**
-   (rkyv) on the criome side (UDS at `/tmp/criome.sock`). Holds
-   no sema state — purely a translator.
+3. `src/` — the daemon binary `nexus-daemon` plus the one-shot
+   binaries `nexus-parse` and `nexus-render`. The daemon speaks
+   **nexus text** on the client side (UDS at
+   `/tmp/nexus.sock`) and **signal** (rkyv) on the criome side
+   (UDS at `/tmp/criome.sock`); the one-shots are stdin/stdout
+   wrappers around the same `Parser` / `Renderer` types for
+   test pipelines and agent harnesses. Holds no sema state —
+   purely a translator.
 
 ```
 client (nexus-cli, agents, editors, shell scripts)
@@ -94,13 +98,17 @@ nexus/
 │   ├── grammar.md                — the canonical nexus grammar
 │   └── examples/                 — illustrative .nexus files
 └── src/
-    ├── lib.rs                    — daemon library half + re-exports
+    ├── lib.rs                    — re-exports of the daemon nouns
     ├── error.rs                  — typed daemon-process errors
-    │                              (Io / Codec [from nota_codec::Error] /
-    │                               Frame [from signal::FrameDecodeError])
-    └── main.rs                   — daemon entry: UDS bind on
-                                    /tmp/nexus.sock, accept loop,
-                                    per-connection signal client to criome
+    ├── daemon.rs                 — Daemon noun: bind, accept loop, spawn Connection per client
+    ├── connection.rs             — Connection noun: per-client text-shuttle session
+    ├── criome_link.rs            — CriomeLink noun: post-handshake signal connection
+    ├── parser.rs                 — Parser noun: text → signal::Request (sigil/delimiter dispatch)
+    ├── renderer.rs               — Renderer noun: signal::Reply → text (per-variant dispatch)
+    ├── main.rs                   — nexus-daemon entry: env config, run Daemon
+    └── bin/
+        ├── parse.rs              — nexus-parse: stdin text → length-prefixed Frame on stdout
+        └── render.rs             — nexus-render: length-prefixed Frame on stdin → text on stdout
 ```
 
 The previous `src/parse.rs` (the hand-written `QueryParser`)
