@@ -344,15 +344,18 @@ nexus-specific:
 
 ## Implementation
 
-[nexus-serde](https://github.com/LiGoldragon/nexus-serde) implements
-`serde::Serializer` + `serde::Deserializer` for the full grammar.
-Consumer code derives serde on message types and round-trips them
-through nexus text.
+[nota-codec](https://github.com/LiGoldragon/nota-codec) +
+[nota-derive](https://github.com/LiGoldragon/nota-derive)
+provide the typed Decoder + Encoder + six derive macros that
+map any record kind to its wire form. Consumer code derives
+the appropriate Nota / Nexus derive on message types and
+round-trips them through nexus text.
 
-For pure-data configs that don't need the messaging layer,
-[nota-serde](https://github.com/LiGoldragon/nota-serde) is the
-leaner choice. A nota document round-trips through nexus-serde
-too, since the grammar is a strict superset.
+The dialect knob (`Decoder::nexus(text)` vs
+`Decoder::nota(text)`) selects the grammar. nota-only types
+that derive `NotaRecord` / `NotaEnum` / `NotaTransparent`
+round-trip in either dialect; types deriving `NexusPattern`
+or `NexusVerb` are nexus-only.
 
 ---
 
