@@ -7,12 +7,12 @@
 //!
 //! Per signal/ARCH the reply types are wire-only (no uniform
 //! `NotaEncode` derive); rendering is application-specific to
-//! the daemon. Data-record rendering (Node / Edge / Graph /
-//! KindDecl) does go through the records' `NotaEncode` impl
-//! since those types are part of the perfect-specificity
-//! schema and own their own text form. The non-uniform
-//! variants — `Diagnostic` and the `Handshake*` family —
-//! get hand-rendered here.
+//! the daemon. Data-record rendering (Node / Edge / Graph)
+//! does go through the records' `NotaEncode` impl since those
+//! types are part of the perfect-specificity schema and own
+//! their own text form. The non-uniform variants —
+//! `Diagnostic` and the `Handshake*` family — get
+//! hand-rendered here.
 //!
 //! `Reply::HandshakeAccepted` / `HandshakeRejected` should
 //! never reach the renderer in normal operation — the daemon
@@ -105,7 +105,6 @@ impl Renderer {
             Records::Node(items) => Self::render_record_seq(items, encoder),
             Records::Edge(items) => Self::render_record_seq(items, encoder),
             Records::Graph(items) => Self::render_record_seq(items, encoder),
-            Records::KindDecl(items) => Self::render_record_seq(items, encoder),
         }
     }
 
