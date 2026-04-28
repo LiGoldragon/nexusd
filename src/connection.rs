@@ -116,6 +116,16 @@ impl Actor for Connection {
         if let Err(error) = state.shuttle().await {
             eprintln!("nexus-daemon: connection error: {error}");
         }
+        // Close the write half eagerly. Ractor wraps the actor's
+        // State in a `BoxedState` and queues it to the supervisor
+        // as part of the `ActorTerminated` event; if Listener is
+        // currently inside `accept().await`, that BoxedState (and
+        // the client UnixStream it holds) sits in the queue until
+        // a new connection wakes the listener — and the client is
+        // blocked on `read_to_string`, which won't return until
+        // the daemon's write half closes. Shutting down here makes
+        // State drop pure cleanup, not load-bearing.
+        let _ = state.client.shutdown().await;
         myself.stop(None);
         Ok(())
     }
