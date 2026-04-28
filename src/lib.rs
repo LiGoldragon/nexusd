@@ -14,15 +14,24 @@
 //! [signal](https://github.com/LiGoldragon/signal). The
 //! parser/encoder primitives live in
 //! [nota-codec](https://github.com/LiGoldragon/nota-codec).
+//!
+//! The daemon supervision tree:
+//!
+//! ```text
+//! Daemon (root)
+//!   └── Listener
+//!         ├── Connection × M  (one per accepted UDS client)
+//!         └── ...
+//! ```
 
 pub mod connection;
 pub mod criome_link;
 pub mod daemon;
 pub mod error;
+pub mod listener;
 pub mod parser;
 pub mod renderer;
 
-pub use connection::Connection;
 pub use criome_link::CriomeLink;
 pub use daemon::Daemon;
 pub use error::{Error, Result};

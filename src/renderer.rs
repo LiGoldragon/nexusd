@@ -145,6 +145,8 @@ impl Renderer {
             Error::FrameTooLarge { .. } => "E0012",
             Error::HandshakeRejected { .. } => "E0020",
             Error::HandshakePostReplyShape { .. } => "E0021",
+            Error::ActorCall(_) => "E0030",
+            Error::ActorSpawn(_) => "E0031",
         }
     }
 }

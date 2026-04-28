@@ -26,5 +26,6 @@ path = "src/bin/render.rs"
 [dependencies]
 thiserror  = "2"
 tokio      = { version = "1", features = ["rt-multi-thread", "macros", "io-util", "net"] }
+ractor     = { version = "0.15", features = ["async-trait"] }
 signal     = { git = "https://github.com/LiGoldragon/signal.git", rev = "05b6411c0b59c9998581625ee19b04f0baf070e8" }
 nota-codec = { git = "https://github.com/LiGoldragon/nota-codec.git", rev = "103b3de6ff177ef20c9c00cabda4a9342bc7edb9" }

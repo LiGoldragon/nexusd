@@ -1,49 +1,77 @@
-//! `Daemon` — the nexus translator process.
+//! `Daemon` actor — root of the nexus supervision tree.
 //!
-//! Owns the two configured socket paths (the user-facing UDS to
-//! bind on; the criome UDS to dial out to per connection). The
-//! daemon itself holds no per-connection state — that lives on
-//! [`Connection`](crate::connection::Connection) and dies with
-//! the connection — so the type's only field is configuration.
-//!
-//! The daemon is unlike criome's [`Daemon`](https://github.com/LiGoldragon/criome/blob/main/src/daemon.rs)
-//! in that it has no shared per-process state to share via
-//! `Arc`; each accepted connection opens its own paired
-//! [`CriomeLink`](crate::criome_link::CriomeLink) when it sees
-//! its first request.
+//! Spawns the [`Listener`](crate::listener) at startup and
+//! holds its `ActorRef` for graceful-shutdown propagation.
+//! The Daemon itself receives no user messages — it only
+//! exists to own the supervision relationship and respond to
+//! a `Stop` request from `main` (e.g., on SIGTERM).
 
 use std::path::PathBuf;
 
-use tokio::net::UnixListener;
+use ractor::{Actor, ActorProcessingErr, ActorRef};
 
-use crate::connection::Connection;
-use crate::error::Result;
+use crate::error::{Error, Result};
+use crate::listener;
 
-pub struct Daemon {
-    listen_path: PathBuf,
-    criome_socket_path: PathBuf,
+pub struct Daemon;
+
+pub struct State {
+    pub listener: ActorRef<listener::Message>,
 }
 
+pub struct Arguments {
+    pub socket_path: PathBuf,
+    pub criome_socket_path: PathBuf,
+}
+
+pub enum Message {}
+
 impl Daemon {
-    pub fn new(listen_path: PathBuf, criome_socket_path: PathBuf) -> Self {
-        Self { listen_path, criome_socket_path }
+    /// Bring up the full supervision tree against `arguments`,
+    /// returning the root daemon's [`ActorRef`] +
+    /// [`tokio::task::JoinHandle`]. `main` typically constructs
+    /// Arguments from env vars and awaits the join handle.
+    pub async fn start(
+        arguments: Arguments,
+    ) -> Result<(ActorRef<Message>, tokio::task::JoinHandle<()>)> {
+        let (daemon_ref, daemon_handle) = Actor::spawn(Some("daemon".into()), Daemon, arguments)
+            .await
+            .map_err(|error| Error::ActorSpawn(error.to_string()))?;
+        Ok((daemon_ref, daemon_handle))
+    }
+}
+
+#[ractor::async_trait]
+impl Actor for Daemon {
+    type Msg = Message;
+    type State = State;
+    type Arguments = Arguments;
+
+    async fn pre_start(
+        &self,
+        myself: ActorRef<Self::Msg>,
+        arguments: Arguments,
+    ) -> std::result::Result<Self::State, ActorProcessingErr> {
+        let (listener_ref, _) = Actor::spawn_linked(
+            Some("listener".into()),
+            listener::Listener,
+            listener::Arguments {
+                socket_path: arguments.socket_path,
+                criome_socket_path: arguments.criome_socket_path,
+            },
+            myself.get_cell(),
+        )
+        .await?;
+
+        Ok(State { listener: listener_ref })
     }
 
-    /// Bind the user-facing UDS, then accept connections forever
-    /// — each connection runs its own text shuttle on a tokio
-    /// task. Removes any stale socket file first.
-    pub async fn run(self) -> Result<()> {
-        let _ = std::fs::remove_file(&self.listen_path);
-        let listener = UnixListener::bind(&self.listen_path)?;
-        loop {
-            let (client, _) = listener.accept().await?;
-            let criome_socket_path = self.criome_socket_path.clone();
-            tokio::spawn(async move {
-                let connection = Connection::new(client, criome_socket_path);
-                if let Err(error) = connection.shuttle().await {
-                    eprintln!("nexus: connection error: {error}");
-                }
-            });
-        }
+    async fn handle(
+        &self,
+        _myself: ActorRef<Self::Msg>,
+        _message: Message,
+        _state: &mut State,
+    ) -> std::result::Result<(), ActorProcessingErr> {
+        Ok(())
     }
 }

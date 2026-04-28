@@ -1,21 +1,23 @@
-//! nexus — the nexus-text translator daemon.
+//! nexus-daemon — entry point.
 //!
-//! Binds the user-facing UDS at `$NEXUS_SOCKET` (default
-//! `/tmp/nexus.sock`); each accepted connection opens its own
-//! paired criome connection at `$CRIOME_SOCKET` (default
-//! `/tmp/criome.sock`) and runs a one-shot text shuttle until
-//! the client closes the write side.
+//! Reads `$NEXUS_SOCKET` (default `/tmp/nexus.sock`) and
+//! `$CRIOME_SOCKET` (default `/tmp/criome.sock`) from the
+//! environment, brings up the [`Daemon`] supervision tree
+//! ([`Listener`](nexus::listener::Listener) + per-client
+//! [`Connection`](nexus::connection::Connection) actors),
+//! waits.
 
 use std::path::PathBuf;
 
-use nexus::{Daemon, Result};
+use nexus::daemon::{Arguments, Daemon};
+use nexus::{Error, Result};
 
 const DEFAULT_NEXUS_SOCKET: &str = "/tmp/nexus.sock";
 const DEFAULT_CRIOME_SOCKET: &str = "/tmp/criome.sock";
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let listen_path: PathBuf = std::env::var("NEXUS_SOCKET")
+    let socket_path: PathBuf = std::env::var("NEXUS_SOCKET")
         .unwrap_or_else(|_| DEFAULT_NEXUS_SOCKET.to_string())
         .into();
     let criome_socket_path: PathBuf = std::env::var("CRIOME_SOCKET")
@@ -23,9 +25,14 @@ async fn main() -> Result<()> {
         .into();
 
     eprintln!("nexus-daemon: forwarding to criome at {}", criome_socket_path.display());
-    eprintln!("nexus-daemon: binding UDS at {}", listen_path.display());
-    let daemon = Daemon::new(listen_path, criome_socket_path);
+    eprintln!("nexus-daemon: binding UDS at {}", socket_path.display());
+
+    let (_daemon_ref, daemon_handle) =
+        Daemon::start(Arguments { socket_path, criome_socket_path }).await?;
 
     eprintln!("nexus-daemon: ready");
-    daemon.run().await
+    daemon_handle
+        .await
+        .map_err(|error| Error::ActorCall(format!("daemon join: {error}")))?;
+    Ok(())
 }

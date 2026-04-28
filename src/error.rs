@@ -29,6 +29,17 @@ pub enum Error {
 
     #[error("nexus verb `{verb}` is not in the M0 parser scope (Assert and Query only)")]
     VerbNotInM0Scope { verb: &'static str },
+
+    /// A ractor `call` failed (timeout, sender dropped). Carries
+    /// a free-form detail string so the caller can log; the
+    /// connection actor's shuttle maps these to text-rendered
+    /// `(Diagnostic …)` replies.
+    #[error("actor call: {0}")]
+    ActorCall(String),
+
+    /// `Actor::spawn` failed during daemon startup.
+    #[error("actor spawn: {0}")]
+    ActorSpawn(String),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
