@@ -26,7 +26,7 @@
 (Node User)
 (Node "nexus daemon")
 (Node "criome daemon")
-(Node "lojix daemon")
+(Node "forge daemon")
 (Node "sema redb store")
 
 ;; ──────────────── Four Edges ────────────────
@@ -37,7 +37,7 @@
 (Edge 100 101 Flow)        ;; user → nexus: data flows
 (Edge 101 102 Flow)        ;; nexus → criome: data flows
 (Edge 102 104 Produces)    ;; criome → sema: criome produces sema records
-(Edge 102 103 DependsOn)   ;; criome → lojix: criome depends on lojix's services
+(Edge 102 103 DependsOn)   ;; criome → forge: criome depends on forge's services
 
 ;; ──────────────── The Graph ────────────────
 

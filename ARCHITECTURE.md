@@ -161,6 +161,44 @@ demo `(Node "User")` → `(Ok)` and `(| Node @name |)` →
 streaming framing and M2+ subscription support land as additive
 `Message` variants on the Connection actor.
 
+## One front-end among many
+
+Nexus is **one** signal speaker — the text↔signal gateway for
+humans, agents, and shell scripts. Criome's wire is signal,
+end-to-end; anything that wants to talk to criome speaks signal.
+Future clients connect to criome by speaking signal directly:
+
+- the **GUI editor** (planned, separate repo) — egui-based;
+  speaks signal directly; never routes through nexus.
+- **mentci-lib** (planned, separate repo) — gesture→signal
+  mapping for the GUI editor and other in-process clients.
+- **direct signal speakers** — agents, integration harnesses,
+  any rust binary linking signal can connect to criome's UDS
+  without going through nexus.
+
+Nexus is therefore not a required intermediary; it is the text
+front-end. New non-text clients do not extend nexus — they
+speak signal directly.
+
+## Parser + renderer wire-in for new verbs
+
+Adding a new signal verb (the planned `Compile` / `BuildRequest`
+post-MVP, plus any future verb) lands in three places:
+
+1. The verb's typed payload + closed-enum variant in
+   [signal](https://github.com/LiGoldragon/signal).
+2. A new arm in [`Parser`](src/parser.rs) — sigil/delimiter
+   dispatch from the surface text construct to the typed
+   payload (Pascal-named record verb head; pattern-matched
+   payload).
+3. A new arm in [`Renderer`](src/renderer.rs) — typed reply →
+   nexus text, one canonical rendering per typed shape.
+
+The mechanical-translation rule (one text construct, one typed
+value) extends to every verb the daemon translates; new verbs
+slot into the existing parser/renderer per-variant dispatch
+without adding new sigils or grammar slots.
+
 ## Cross-cutting context
 
 - Project-wide architecture:
