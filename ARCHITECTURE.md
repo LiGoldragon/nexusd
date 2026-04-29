@@ -161,24 +161,55 @@ demo `(Node "User")` → `(Ok)` and `(| Node @name |)` →
 streaming framing and M2+ subscription support land as additive
 `Message` variants on the Connection actor.
 
-## One front-end among many
+## What nexus-daemon does — and only that
 
-Nexus is **one** signal speaker — the text↔signal gateway for
-humans, agents, and shell scripts. Criome's wire is signal,
-end-to-end; anything that wants to talk to criome speaks signal.
-Future clients connect to criome by speaking signal directly:
+The nexus daemon does **one thing**: translate between nexus text
+and signal. In both directions. Nothing else.
 
-- the **GUI editor** (planned, separate repo) — egui-based;
-  speaks signal directly; never routes through nexus.
-- **mentci-lib** (planned, separate repo) — gesture→signal
-  mapping for the GUI editor and other in-process clients.
-- **direct signal speakers** — agents, integration harnesses,
-  any rust binary linking signal can connect to criome's UDS
-  without going through nexus.
+- text in → signal out (parsing)
+- signal in → text out (rendering)
 
-Nexus is therefore not a required intermediary; it is the text
-front-end. New non-text clients do not extend nexus — they
-speak signal directly.
+It does not hold sema state. It does not validate beyond
+syntactic well-formedness. It does not remember anything across
+requests except the per-connection handshake/subscription state
+needed to keep ordered replies flowing. It does not read records,
+write records, or know what a record means. Translation is the
+whole job.
+
+This bright-line scope makes the daemon usable in two distinct
+roles, both reducing to the same translation primitive:
+
+- **Text-client gateway.** Humans, agents, shell scripts, and
+  LLM tools send nexus text to the daemon's UDS; the daemon
+  parses to signal, forwards to criome, renders the reply back
+  to text.
+- **Rendering service.** Other signal-speaking clients (mentci-*
+  GUIs being the first) speak signal directly to criome but
+  also hold a connection to the nexus daemon and use it to
+  render typed signal payloads as nexus text for human display
+  (inspector views, wire-pane frame display, hover labels). The
+  same daemon, the same primitive, used as a service rather
+  than a gateway.
+
+In both roles the daemon is a translator. New clients do not
+extend nexus's scope — they consume the translation primitive
+from whichever side they need.
+
+## Clients connecting directly to criome
+
+Anything that wants to *talk to* criome speaks signal. The nexus
+daemon is one such speaker (forwarding the parsed signal from
+its text clients). Others connect directly:
+
+- **mentci-* GUIs** — speak signal to criome for editing and
+  subscriptions; *additionally* speak signal to nexus-daemon for
+  rendering as described above.
+- **direct signal speakers** — agents written in Rust, CI
+  harnesses, integration tests, any binary linking signal.
+
+Nexus is not a required intermediary for criome access; it is
+the text translation primitive that humans and rendering clients
+both consume.
 
 ## Parser + renderer wire-in for new verbs
 
