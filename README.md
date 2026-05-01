@@ -4,9 +4,9 @@ The nexus language: spec + translator daemon.
 
 ## What's here
 
-- [`spec/grammar.md`](spec/grammar.md) — the nexus grammar spec
+- `spec/grammar.md` — the nexus grammar spec
   (text language design).
-- [`spec/examples/`](spec/examples/) — illustrative `.nexus` files
+- `spec/examples/` — illustrative `.nexus` files
   showing the grammar in use.
 - `src/` — the daemon implementation. Parses nexus text via
   nota-codec at
@@ -16,7 +16,7 @@ The nexus language: spec + translator daemon.
 
 ## Architecture
 
-See [`ARCHITECTURE.md`](ARCHITECTURE.md) for the daemon's role
+See `ARCHITECTURE.md` for the daemon's role
 and code map.
 
 For the project being built: criome's

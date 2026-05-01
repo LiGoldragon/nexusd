@@ -2,9 +2,9 @@
 
 The nexus language: **spec + translator daemon** in one repo.
 
-1. [`spec/grammar.md`](spec/grammar.md) — the canonical nexus
+1. `spec/grammar.md` — the canonical nexus
    grammar spec.
-2. [`spec/examples/`](spec/examples/) — illustrative `.nexus`
+2. `spec/examples/` — illustrative `.nexus`
    files showing the grammar in use.
 3. `src/` — the daemon binary `nexus-daemon` plus the one-shot
    binaries `nexus-parse` and `nexus-render`. The daemon speaks
@@ -37,7 +37,7 @@ client (nexus-cli, agents, editors, shell scripts)
 
 Owns (`[lib]` + `[[bin]]` split):
 
-- **The grammar spec** (under [`spec/`](spec/)). Stable;
+- **The grammar spec** (under `spec/`). Stable;
   changes coordinated with
   nota-codec.
 - **bin half** (`src/main.rs`): the daemon process — UDS
