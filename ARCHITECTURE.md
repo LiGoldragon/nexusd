@@ -39,7 +39,7 @@ Owns (`[lib]` + `[[bin]]` split):
 
 - **The grammar spec** (under [`spec/`](spec/)). Stable;
   changes coordinated with
-  [nota-codec](https://github.com/LiGoldragon/nota-codec).
+  nota-codec.
 - **bin half** (`src/main.rs`): the daemon process — UDS
   listener at `/tmp/nexus.sock`, parsing, signal connection
   to criome, reply rendering.
@@ -52,15 +52,15 @@ Owns (`[lib]` + `[[bin]]` split):
 Does not own:
 
 - Lexer / Decoder / Encoder kernel — lives in
-  [nota-codec](https://github.com/LiGoldragon/nota-codec).
+  nota-codec.
   Per-kind parsing of records, pattern records, verbs, and
   primitives is performed by the derives in
-  [nota-derive](https://github.com/LiGoldragon/nota-derive)
+  nota-derive
   (`NotaRecord`, `NotaEnum`, `NotaTransparent`,
   `NotaTryTransparent`, `NexusPattern`, `NexusVerb`) which
   signal types apply.
 - The signal envelope and per-verb typed IR — lives in
-  [signal](https://github.com/LiGoldragon/signal).
+  signal.
 - Sema state — that's criome's exclusive concern.
 - The validator pipeline.
 
@@ -127,7 +127,7 @@ Renderer, and CriomeLink stay plain structs (single-owner,
 non-concurrent — they're stateless transformers / one-call-at-a-time
 sessions, not components warranting their own mailboxes). The
 ractor framework is the project default for components with
-state and a message protocol — see [`lore/rust/ractor.md`](https://github.com/LiGoldragon/lore/blob/main/rust/ractor.md).
+state and a message protocol — see `lore/rust/ractor.md`.
 
 ## Invariants
 
@@ -138,8 +138,8 @@ state and a message protocol — see [`lore/rust/ractor.md`](https://github.com/
   with the connection; durable state lives in criome's sema.
 - **No correlation IDs.** Position pairs replies to requests.
 - **One text construct, one typed value.** The mechanical
-  translation rule is the [perfect-specificity
-  invariant](https://github.com/LiGoldragon/criome/blob/main/ARCHITECTURE.md#invariant-d)
+  translation rule is the perfect-specificity
+  invariant
   seen at the text↔signal boundary. Every nexus text construct
   names exactly one typed shape; every typed shape has exactly
   one canonical text rendering. The daemon never instantiates
@@ -217,7 +217,7 @@ Adding a new signal verb (the planned `Compile` / `BuildRequest`
 post-MVP, plus any future verb) lands in three places:
 
 1. The verb's typed payload + closed-enum variant in
-   [signal](https://github.com/LiGoldragon/signal).
+   signal.
 2. A new arm in [`Parser`](src/parser.rs) — sigil/delimiter
    dispatch from the surface text construct to the typed
    payload (Pascal-named record verb head; pattern-matched
@@ -233,9 +233,9 @@ without adding new sigils or grammar slots.
 ## Cross-cutting context
 
 - Project-wide architecture:
-  [criome/ARCHITECTURE.md](https://github.com/LiGoldragon/criome/blob/main/ARCHITECTURE.md)
+  criome/ARCHITECTURE.md
 - Signal (the rkyv form on the criome leg):
-  [signal/ARCHITECTURE.md](https://github.com/LiGoldragon/signal/blob/main/ARCHITECTURE.md)
+  signal/ARCHITECTURE.md
 - nota-codec (text codec used both for parsing client requests
   and rendering replies):
-  [nota-codec/ARCHITECTURE.md](https://github.com/LiGoldragon/nota-codec/blob/main/ARCHITECTURE.md)
+  nota-codec/ARCHITECTURE.md

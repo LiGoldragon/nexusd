@@ -1,6 +1,6 @@
 # nexus
 
-A messaging protocol built on [nota](https://github.com/LiGoldragon/nota).
+A messaging protocol built on nota.
 Adds sigils and delimiter pairs for **assert / mutate / retract /
 validate / query / subscribe / pattern / shape / constrain /
 atomic-batch** actions against a record graph.
@@ -14,7 +14,7 @@ This repo is spec-only.
 
 ## Inherited from nota
 
-See [nota's spec](https://github.com/LiGoldragon/nota) for the full
+See nota's spec for the full
 grammar. nexus inherits:
 
 - **2 delimiter pairs**: `( )` records, `[ ]` sequences
@@ -144,7 +144,7 @@ match the schema.
 ### Why this rule exists
 
 The auto-name rule is a manifestation of the project-wide
-[perfect-specificity invariant](https://github.com/LiGoldragon/criome/blob/main/ARCHITECTURE.md#invariant-d):
+perfect-specificity invariant:
 the IR carries no redundant data; field-position carries the
 binding identity; the text is a literal reading of that identity.
 Allowing `@h` for `@horizontal` would fork "what the parser sees"
@@ -344,8 +344,8 @@ nexus-specific:
 
 ## Implementation
 
-[nota-codec](https://github.com/LiGoldragon/nota-codec) +
-[nota-derive](https://github.com/LiGoldragon/nota-derive)
+nota-codec +
+nota-derive
 provide the typed Decoder + Encoder + six derive macros that
 map any record kind to its wire form. Consumer code derives
 the appropriate Nota / Nexus derive on message types and
