@@ -127,7 +127,7 @@ Renderer, and CriomeLink stay plain structs (single-owner,
 non-concurrent — they're stateless transformers / one-call-at-a-time
 sessions, not components warranting their own mailboxes). The
 ractor framework is the project default for components with
-state and a message protocol — see [`tools-documentation/rust/ractor.md`](https://github.com/LiGoldragon/tools-documentation/blob/main/rust/ractor.md).
+state and a message protocol — see [`lore/rust/ractor.md`](https://github.com/LiGoldragon/lore/blob/main/rust/ractor.md).
 
 ## Invariants
 
