@@ -68,12 +68,9 @@ fn populated_records_node_renders_each_node_as_record() {
             (Slot::from(1025u64), Node { name: "Group".to_string() }),
         ])))
         .expect("render");
-    // Records carry their sema slot per the records-with-slots
-    // wire shape; nota-codec's tuple impl renders (Slot, T) as
-    // `(Tuple slot (T …))`.
     assert_eq!(
         renderer.into_text(),
-        r#"[(Tuple 1024 (Node "User")) (Tuple 1025 (Node "Group"))]"#
+        r#"[(SlotBinding 1024 (Node "User")) (SlotBinding 1025 (Node "Group"))]"#
     );
 }
 
@@ -92,7 +89,7 @@ fn populated_records_edge_renders_each_with_relation_kind() {
         .expect("render");
     assert_eq!(
         renderer.into_text(),
-        "[(Tuple 1029 (Edge 100 200 Calls))]"
+        "[(SlotBinding 1029 (Edge 100 200 Calls))]"
     );
 }
 
@@ -123,7 +120,10 @@ fn two_replies_separate_with_newline() {
             Node { name: "User".to_string() },
         )])))
         .expect("second");
-    assert_eq!(renderer.into_text(), "(Ok)\n[(Tuple 1024 (Node \"User\"))]");
+    assert_eq!(
+        renderer.into_text(),
+        "(Ok)\n[(SlotBinding 1024 (Node \"User\"))]"
+    );
 }
 
 #[test]

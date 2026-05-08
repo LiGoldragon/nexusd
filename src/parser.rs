@@ -1,23 +1,14 @@
 //! `Parser` — nexus text → [`signal::Request`].
 //!
-//! Top-level dispatch over the verb-opening sigils and
-//! delimiters defined in
-//! [nexus/spec/grammar.md](../spec/grammar.md). The verb is
-//! determined by the first token of each top-level expression:
+//! This is the current Criome-specific parser. It still accepts the
+//! pre-renovation M0 surface while `nota-codec` / `nota-derive` are moved to
+//! Nexus Tier 0. The Tier 0 target in `spec/grammar.md` is explicit
+//! request-record dispatch: `(Assert ...)`, `(Match ...)`, `(Subscribe ...)`,
+//! and so on.
 //!
-//! | First token | Verb | Wire path |
-//! |---|---|---|
-//! | `(` | Assert | `AssertOperation::decode` |
-//! | `(\|` | Query | `QueryOperation::decode` |
-//! | `~` | Mutate / Mutate-with-pattern | M1+ |
-//! | `!` | Retract / Retract-matching | M1+ |
-//! | `?` | Validate | M1+ |
-//! | `*` | Subscribe | M2+ |
-//! | `[\|` | AtomicBatch | M1+ |
-//!
-//! M0 parses Assert and Query directly; the other verbs return
-//! [`Error::VerbNotInM0Scope`]. The renderer turns that error
-//! into a `(Diagnostic …)` text reply for the user.
+//! Until the codec boundary lands, this parser remains a compatibility adapter:
+//! it parses old Assert and Query forms directly, and the other old verb forms
+//! produce [`Error::VerbNotInM0Scope`].
 //!
 //! `Request::Handshake` does not appear in user-facing text —
 //! the daemon performs the handshake with criome internally

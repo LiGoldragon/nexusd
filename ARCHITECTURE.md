@@ -2,10 +2,9 @@
 
 The nexus language: **spec + translator daemon** in one repo.
 
-1. `spec/grammar.md` — the canonical nexus
-   grammar spec.
-2. `spec/examples/` — illustrative `.nexus`
-   files showing the grammar in use.
+1. `spec/grammar.md` — the canonical Nexus Tier 0 grammar spec.
+2. `spec/examples/` — canonical and illustrative `.nexus`
+   files showing explicit request records.
 3. `src/` — the daemon binary `nexus-daemon` plus the one-shot
    binaries `nexus-parse` and `nexus-render`. The daemon speaks
    **nexus text** on the client side (UDS at
@@ -96,7 +95,7 @@ work is criome-state, fetched via Query). No sema cache.
 nexus/
 ├── spec/
 │   ├── grammar.md                — the canonical nexus grammar
-│   └── examples/                 — illustrative .nexus files
+│   └── examples/                 — canonical and illustrative .nexus files
 └── src/
     ├── lib.rs                    — re-exports + supervision-tree doc
     ├── error.rs                  — typed daemon-process errors (incl. ActorCall, ActorSpawn)
@@ -104,8 +103,8 @@ nexus/
     ├── listener.rs               — Listener actor: UDS accept loop, spawns Connection per accept
     ├── connection.rs             — Connection actor: per-client text shuttle (single-message Run lifecycle)
     ├── criome_link.rs            — CriomeLink struct: post-handshake signal connection (single-owner, not an actor)
-    ├── parser.rs                 — Parser struct: text → signal::Request (sigil/delimiter dispatch)
-    ├── renderer.rs               — Renderer struct: signal::Reply → text (per-variant dispatch)
+    ├── parser.rs                 — Parser struct: current Criome parser; awaiting Tier 0 request-record rewrite
+    ├── renderer.rs               — Renderer struct: signal::Reply → Tier 0 text
     ├── main.rs                   — nexus-daemon entry: env config, Actor::spawn root Daemon, await join handle
     └── bin/
         ├── parse.rs              — nexus-parse: stdin text → length-prefixed Frame on stdout
@@ -153,13 +152,13 @@ state and a message protocol — see `lore/rust/ractor.md`.
 
 ## Status
 
-**M0 working.** Daemon is ractor-hosted and verified end-to-end
-through `mentci-integration` (text in via `nexus-cli` → signal to
-criome → reply rendered to text → delivered to client). The full
-demo `(Node "User")` → `(Ok)` and `(| Node @name |)` →
-`[(Node "User")]` shuttles correctly through both daemons. M1+
-streaming framing and M2+ subscription support land as additive
-`Message` variants on the Connection actor.
+**Renovating.** The spec is being renovated to Nexus Tier 0: records,
+sequences, explicit request records, `@`, and schema-driven
+`PatternField<T>` decoding. The renderer now emits named `SlotBinding`
+records for slotted query replies. The current parser still carries the
+previous Criome-specific M0 surface until `nota-codec` / `nota-derive` stop
+emitting old pattern delimiters. Domain-parameterizing the daemon waits until a
+second concrete translator exists.
 
 ## What nexus-daemon does — and only that
 
@@ -218,17 +217,15 @@ post-MVP, plus any future verb) lands in three places:
 
 1. The verb's typed payload + closed-enum variant in
    signal.
-2. A new arm in [`Parser`](src/parser.rs) — sigil/delimiter
-   dispatch from the surface text construct to the typed
-   payload (Pascal-named record verb head; pattern-matched
-   payload).
+2. A new arm in [`Parser`](src/parser.rs) — request-record dispatch from the
+   PascalCase verb head to the typed payload.
 3. A new arm in [`Renderer`](src/renderer.rs) — typed reply →
    nexus text, one canonical rendering per typed shape.
 
 The mechanical-translation rule (one text construct, one typed
 value) extends to every verb the daemon translates; new verbs
-slot into the existing parser/renderer per-variant dispatch
-without adding new sigils or grammar slots.
+slot into the parser/renderer per-variant dispatch without adding sigils or
+grammar slots.
 
 ## Cross-cutting context
 

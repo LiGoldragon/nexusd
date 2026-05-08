@@ -1,82 +1,51 @@
-;; patterns-and-edits.nexus — pattern, bind, mutate, retract,
-;; validate, subscribe, constrain, atomic batch. Uses the
-;; flow-graph schema for continuity.
+;; patterns-and-edits.nexus
+;;
+;; Tier 0 examples for bind, wildcard, mutate, retract, validate,
+;; subscribe, constrain, and atomic requests.
 
-;; ──────────────── Bind aliasing ────────────────
-;; `@a=@b` aliases two positions; matches if they unify. Useful
-;; for self-edges (Edge whose `from` equals its `to`):
+;; Bind positions use schema field names.
 
-(| Edge @from=@to @kind |)
+(Match (EdgeQuery @from @to @kind) Any)
 
-;; ──────────────── Wildcard ────────────────
-;; `_` matches anything at that position without binding.
-;; Find every Edge of any kind, ignore from / to.
+;; Wildcard matches without binding.
 
-(| Edge _ _ @kind |)
+(Match (EdgeQuery _ _ @kind) Any)
 
-;; ──────────────── Negate ────────────────
-;; `!` inside a pattern negates a constraint. Find Nodes whose
-;; name is NOT "criome daemon":
+;; Concrete field matching.
 
-(| Node !"criome daemon" |)
+(Match (NodeQuery "criome daemon") Any)
 
-;; Top-level retract — `!Record` removes the asserted fact:
-;; (uncomment to actually retract)
-;; !(Node User)
+;; Whole-record replacement at a slot.
 
-;; ──────────────── Mutate ────────────────
-;; `~` replaces an existing record with the new content. The
-;; identity (slot) is preserved; this is a whole-record swap.
+(Mutate 102 (Node "criome daemon - validator and sema"))
 
-~(Node "criome daemon — validator + sema")
+;; Retract by kind and slot.
 
-;; Mutate-with-pattern: keep from + to, change every matching
-;; Edge's kind to Flow.
+(Retract Node 102)
 
-~(| Edge @from @to _ |) (Edge @from @to Flow)
+;; Validate is a dry-run wrapper over another request.
 
-;; ──────────────── Validate (dry-run) ────────────────
-;; `?` prefix on any verb turns it into a dry-run. Tells you
-;; whether the assert would succeed without doing it.
+(Validate (Assert (Node "Fresh node")))
+(Validate (Mutate 102 (Node "would replace this node's name")))
 
-?(Node "Fresh node")
-?~(Node "would replace this node's name")
+;; Subscribe opens a continuous match on the connection.
 
-;; ──────────────── Subscribe ────────────────
-;; `*` opens a continuous query on this connection. Events stream
-;; from now onward — there is NO initial snapshot. If the client
-;; wants current state, it issues a separate Query first. One
-;; subscription per connection; close the socket to end.
+(Subscribe (NodeQuery @name) ImmediateExtension Block)
 
-*(| Node @name |)
+;; Constrain composes multiple patterns and names the bind set that must unify.
 
-;; ──────────────── Constrain (conjunction) ────────────────
-;; `{| ... |}` is logical AND across patterns. Shared bind
-;; names unify. Find every Edge of kind DependsOn whose `to`
-;; Node has a known name:
+(Constrain
+  [(EdgeQuery @from @to DependsOn)
+   (NodeQuery @to)]
+  (Unify [to])
+  Any)
 
-{|
-  (| Edge @from @to DependsOn |)
-  (| Node  @to-name |)
-|}
+;; Projection selects fields from a matched shape.
 
-;; Projection over a join:
+(Project (EdgeQuery @from @to @kind) (Fields [from to kind]) Any)
 
-{|
-  (| Edge @from @to @kind |)
-  (| Node @to-name |)
-|} { from to to-name kind }
+;; Atomic bundles requests as all-or-nothing state change.
 
-;; ──────────────── Atomic batch ────────────────
-;; `[| ... |]` runs multiple edits all-or-nothing. Each item
-;; carries its own verb sigil. Useful when invariants span
-;; multiple records. Edges within the batch reference the
-;; preceding Nodes by their assigned slots (criome assigns slots
-;; in order; for M0 the client must round-trip if it needs the
-;; assigned slots back to compose later edges).
-
-[|
-  (Node Apple)
-  (Node Banana)
-  (Edge 200 201 DependsOn)
-|]
+(Atomic [(Assert (Node Apple))
+         (Assert (Node Banana))
+         (Assert (Edge 200 201 DependsOn))])

@@ -1,0 +1,62 @@
+;; tier-0-canonical.nexus
+;;
+;; Canonical Nexus Tier 0 examples.
+;;
+;; Tier 0 is typed text over records and sequences. Every top-level
+;; request has an explicit verb record. Patterns are decoded by the
+;; receiving schema type; there is no separate pattern delimiter.
+
+;; ------------------------------------------------------------------
+;; State-changing requests
+;; ------------------------------------------------------------------
+
+(Assert (Node User))
+(Assert (Node "nexus daemon"))
+(Assert (Edge 100 101 Flow))
+
+(Mutate 100 (Node "renamed node"))
+(Retract Node 100)
+
+(Atomic [(Assert (Node A))
+         (Assert (Node B))
+         (Mutate 100 (Node C))])
+
+;; ------------------------------------------------------------------
+;; Read requests
+;; ------------------------------------------------------------------
+
+(Match (NodeQuery @name) Any)
+(Match (EdgeQuery @from @to @kind) Any)
+(Match (EdgeQuery 100 @to Flow) (Limit 10))
+
+(Subscribe (NodeQuery @name) ImmediateExtension Block)
+(Validate (Assert (Node "dry run")))
+
+;; ------------------------------------------------------------------
+;; Reductions and composition
+;; ------------------------------------------------------------------
+
+(Aggregate (NodeQuery @name) Count)
+(Project (NodeQuery @name) (Fields [name]) Any)
+
+(Constrain
+  [(EdgeQuery 100 @to Flow)
+   (NodeQuery @to)]
+  (Unify [to])
+  Any)
+
+(Infer (NodeQuery @name) StandardOntology)
+(Recurse (NodeQuery @name) (EdgeQuery @from @to DependsOn) Fixpoint)
+
+;; ------------------------------------------------------------------
+;; Replies
+;; ------------------------------------------------------------------
+
+(Ok)
+(Diagnostic Error E0099 "Mutate is outside the current daemon scope")
+
+[(Node User)
+ (Node "nexus daemon")]
+
+[(SlotBinding 1024 (Node User))
+ (SlotBinding 1025 (Node "nexus daemon"))]

@@ -7,12 +7,10 @@
 //!
 //! Per signal/ARCH the reply types are wire-only (no uniform
 //! `NotaEncode` derive); rendering is application-specific to
-//! the daemon. Data-record rendering (Node / Edge / Graph)
-//! does go through the records' `NotaEncode` impl since those
-//! types are part of the perfect-specificity schema and own
-//! their own text form. The non-uniform variants —
-//! `Diagnostic` and the `Handshake*` family — get
-//! hand-rendered here.
+//! the daemon. Data-record rendering goes through each record's
+//! `NotaEncode` impl, while records returned from Sema are
+//! wrapped in an explicit `SlotBinding` record so the text
+//! boundary does not expose anonymous tuples.
 //!
 //! `Reply::HandshakeAccepted` / `HandshakeRejected` should
 //! never reach the renderer in normal operation — the daemon
@@ -21,7 +19,7 @@
 //! stream is a daemon protocol error.
 
 use nota_codec::{Encoder, NotaEncode};
-use signal::{Diagnostic, OutcomeMessage, Records, Reply};
+use signal::{Diagnostic, Edge, Graph, Node, OutcomeMessage, Records, Reply, Slot};
 
 use crate::error::{Error, Result};
 
@@ -102,16 +100,34 @@ impl Renderer {
 
     fn render_records(records: &Records, encoder: &mut Encoder) -> Result<()> {
         match records {
-            Records::Node(items) => Self::render_record_seq(items, encoder),
-            Records::Edge(items) => Self::render_record_seq(items, encoder),
-            Records::Graph(items) => Self::render_record_seq(items, encoder),
+            Records::Node(items) => Self::render_node_bindings(items, encoder),
+            Records::Edge(items) => Self::render_edge_bindings(items, encoder),
+            Records::Graph(items) => Self::render_graph_bindings(items, encoder),
         }
     }
 
-    fn render_record_seq<T: NotaEncode>(items: &[T], encoder: &mut Encoder) -> Result<()> {
+    fn render_node_bindings(items: &[(Slot, Node)], encoder: &mut Encoder) -> Result<()> {
+        Self::render_slot_bindings(items, encoder)
+    }
+
+    fn render_edge_bindings(items: &[(Slot, Edge)], encoder: &mut Encoder) -> Result<()> {
+        Self::render_slot_bindings(items, encoder)
+    }
+
+    fn render_graph_bindings(items: &[(Slot, Graph)], encoder: &mut Encoder) -> Result<()> {
+        Self::render_slot_bindings(items, encoder)
+    }
+
+    fn render_slot_bindings<Value>(items: &[(Slot, Value)], encoder: &mut Encoder) -> Result<()>
+    where
+        Value: NotaEncode,
+    {
         encoder.start_seq()?;
-        for item in items {
-            item.encode(encoder)?;
+        for (slot, value) in items {
+            encoder.start_record("SlotBinding")?;
+            encoder.write_u64((*slot).into())?;
+            value.encode(encoder)?;
+            encoder.end_record()?;
         }
         encoder.end_seq()?;
         Ok(())

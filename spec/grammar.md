@@ -1,373 +1,238 @@
 # nexus
 
-A messaging protocol built on nota.
-Adds sigils and delimiter pairs for **assert / mutate / retract /
-validate / query / subscribe / pattern / shape / constrain /
-atomic-batch** actions against a record graph.
+Nexus is a typed text format for Sema requests and replies. It mirrors rkyv in
+text: records and sequences carry the structure; Rust schema types carry the
+meaning.
 
-Every valid `.nota` text is also valid `.nexus`; the reverse is
-not true — nexus adds constructs that `.nota` parsers reject.
+The core rule:
 
-This repo is spec-only.
+> Delimiters define structure. Head identifiers define meaning. The receiving
+> type decides how a field decodes.
 
----
-
-## Inherited from nota
-
-See nota's spec for the full
-grammar. nexus inherits:
-
-- **2 delimiter pairs**: `( )` records, `[ ]` sequences
-- **2 string forms**: `" "` inline, `""" """` multiline
-- **2 sigils**: `;;` line comments, `#` byte-literal prefix.
-  *Comments carry no load-bearing data — the parser discards
-  them. Information that must be communicated has a typed home
-  in the schema.*
-- **3 identifier classes**: PascalCase (types/variants),
-  camelCase (fields in schema / instance names), kebab-case
-  (titles / tags)
-- Integer / float / bool / bytes literals, `:` path syntax
-- Bare-identifier strings (when the schema expects a String,
-  an ident-class token may be written bare)
-
-Records are positional: `(TypeName v1 v2 …)`. Field names live
-in the schema, not the text.
+Nexus is not an expression language. It has no operators, no function calls,
+and no special delimiter for query forms. A top-level message is a typed record,
+usually a variant of the closed `Request` or `Reply` enum.
 
 ---
 
-## Added by nexus
+## 1 · Grammar Surface
 
-### 4 additional delimiter pairs
+The Tier 0 grammar has two delimiter pairs and two in-position pattern markers.
 
-The three families (round, square, curly) each have a piped
-form that means *combine-as-unit*:
-
-| Pair | Role | Example |
+| Construct | Form | Role |
 |---|---|---|
-| `(\| \|)` | **Pattern** — match a record by shape | `(\| Point @h @v \|)` |
-| `[\| \|]` | **Atomic batch** — AND of edits (all-or-nothing) | `[\| (Node a "A") ~(Node b "B") \|]` |
-| `{ }` | **Shape** — projection / field selection | `{ horizontal vertical }` |
-| `{\| \|}` | **Constrain** — conjunction of patterns | `{\| (\| Point @h @v \|) (\| Positive @h \|) \|}` |
+| Record | `(Kind field0 field1 ...)` | Named positional composite |
+| Sequence | `[elem0 elem1 ...]` | Ordered collection |
+| Bind | `@fieldname` | Pattern bind in a `PatternField<T>` position |
+| Wildcard | `_` | Pattern wildcard in a `PatternField<T>` position |
+| Path | `Name:Nested` | Nested name separator |
+| Comment | `;; ...` | Line comment discarded by the parser |
+| Byte literal | `#a1b2c3` | Lowercase even-length hex bytes |
+| String | `"text"` | Inline quoted string |
+| Multiline string | `"""..."""` | Multiline string |
+| Bare string | `bare-ident` | String when the schema expects `String` |
 
-Reads as: *plain delimiter = passive data; piped delimiter =
-combine the contained items as a single logical unit*.
+The lexer token vocabulary is locked at the structural minimum:
 
-### 5 additional sigils
+```rust
+pub enum Token {
+    LParen,
+    RParen,
+    LBracket,
+    RBracket,
+    At,
+    Colon,
+    Ident(String),
+    Bool(bool),
+    Int(i128),
+    UInt(u128),
+    Float(f64),
+    Str(String),
+    Bytes(Vec<u8>),
+}
+```
 
-| Sigil | Role | Position |
+The wildcard `_` is an identifier token. It becomes a wildcard only when the
+receiving type is `PatternField<T>`.
+
+---
+
+## 2 · Records
+
+A record opens with `(`, followed by a PascalCase head identifier and positional
+fields.
+
+```nexus
+(Point 3.0 4.0)
+(Node User)
+(Node "nexus daemon")
+(Edge 100 101 Flow)
+(Line (Point 0.0 0.0) (Point 10.0 10.0))
+```
+
+Field names do not appear in text. They live in the Rust schema. The receiving
+type knows how many fields to read, which types they have, and what each
+position means.
+
+Record heads also encode closed enum variants:
+
+```nexus
+Flow
+(Limit 10)
+(Range 0 100)
+```
+
+Unit variants may render as a bare PascalCase identifier when the receiving type
+expects that enum.
+
+---
+
+## 3 · Sequences
+
+A sequence opens with `[` and closes with `]`.
+
+```nexus
+[(Node alice) (Node bob) (Node carol)]
+[100 101 102]
+[("name" 1) ("age" 2)]
+[]
+```
+
+The receiving type decides whether the sequence is a `Vec<T>`, `BTreeSet<T>`,
+or a map encoded as a sequence of pair records. The wire form does not carry a
+separate set or map delimiter.
+
+---
+
+## 4 · Patterns
+
+Patterns are schema-driven. There is no pattern delimiter.
+
+The same text delimiter `()` is used for data records and query records. The
+receiving type decides whether `@field` and `_` are allowed.
+
+```rust
+struct Node {
+    name: String,
+}
+
+struct NodeQuery {
+    name: PatternField<String>,
+}
+```
+
+| Text | Receiving type | Meaning |
 |---|---|---|
-| `~` | Mutate / replace | prefix on a record or pattern |
-| `!` | Retract / negate | prefix on a record, pattern, or value-in-pattern |
-| `?` | Validate (dry-run) | prefix on any verb |
-| `*` | Subscribe (continuous query) | prefix on a pattern |
-| `@` | Bind hole | prefix on an identifier in a pattern |
+| `(Node User)` | `Node` | concrete data record |
+| `(NodeQuery @name)` | `NodeQuery` | bind the `name` field |
+| `(NodeQuery _)` | `NodeQuery` | wildcard match |
+| `(NodeQuery User)` | `NodeQuery` | concrete field match |
+| `(Node @name)` | `Node` | parse error |
 
-### 1 extra token (narrow use)
+`@fieldname` must match the schema field name at that position. The position
+already carries identity; the marker confirms the field being bound.
 
-| Token | Role |
+`_` is valid only when the receiving type is `PatternField<T>`. Outside a
+pattern position it is not a value.
+
+---
+
+## 5 · Requests
+
+Every top-level request is a verb record. Tier 0 uses fully explicit request
+heads; a bare top-level domain record is not an implicit assert.
+
+```rust
+pub enum Request {
+    Assert(AssertOperation),
+    Mutate(MutateOperation),
+    Retract(RetractOperation),
+    Atomic(AtomicBatch),
+    Match(MatchQuery),
+    Subscribe(SubscribeQuery),
+    Validate(ValidateRequest),
+    Aggregate(AggregateQuery),
+    Project(ProjectQuery),
+    Constrain(ConstrainQuery),
+    Infer(InferQuery),
+    Recurse(RecurseQuery),
+}
+```
+
+Examples:
+
+```nexus
+(Assert (Node User))
+(Assert (Edge 100 101 Flow))
+
+(Mutate 100 (Node "renamed"))
+(Retract Node 100)
+(Atomic [(Assert (Node A)) (Assert (Node B))])
+
+(Match (NodeQuery @name) Any)
+(Match (EdgeQuery 100 @to Flow) (Limit 10))
+(Subscribe (NodeQuery @name) ImmediateExtension Block)
+(Validate (Assert (Node "dry run")))
+
+(Aggregate (NodeQuery @name) Count)
+(Project (NodeQuery @name) (Fields [name]) Any)
+(Constrain [(EdgeQuery 100 @to Flow) (NodeQuery @to)] (Unify [to]) Any)
+(Infer (NodeQuery @name) StandardOntology)
+(Recurse (NodeQuery @name) (EdgeQuery @from @to DependsOn) Fixpoint)
+```
+
+Slot references are bare integers in slot-typed positions. The schema tells the
+decoder that `100` is a `Slot<Node>`, not an ordinary `u64`.
+
+---
+
+## 6 · Replies
+
+Replies are typed records or sequences of typed records.
+
+```nexus
+(Ok)
+(Diagnostic Error E0042 "no binding for unknown-target")
+[(Node User) (Node "nexus daemon")]
+[(Ok) (Diagnostic Error E0042 "conflict on slot 100") (Ok)]
+```
+
+When a reply needs to carry the store slot beside a returned record, use a typed
+pair record rather than an anonymous tuple:
+
+```nexus
+[(SlotBinding 1024 (Node User))
+ (SlotBinding 1025 (Node "nexus daemon"))]
+```
+
+`SlotBinding<T>` is the textual shape for `slot + value` reply data. It is a
+named type because anonymous tuples are not used at typed boundaries.
+
+---
+
+## 7 · Dropped Forms
+
+These forms are not reserved. They are outside Tier 0 and should not appear in
+new examples or new parser work.
+
+| Dropped form | Replacement |
 |---|---|
-| `=` | Bind-alias separator. Valid only between two bind names (`@a=@b`). Not valid as a field-value separator. |
-
-### Reserved tokens (deferred design)
-
-These tokens are reserved for future use and are syntax errors
-today:
-
-- `<` `>` `<=` `>=` `!=` — comparison operators (intended for
-  pattern positions: `(\| Person @age (@age < 21) \|)` or similar
-  form, design pending).
-- `=` between non-bind tokens — equality comparison (the
-  bind-alias use is the *only* `=` use today).
-
-### Totals
-
-- **6 delimiter pairs** (2 from nota + 4 from nexus) + **2 string forms**
-- **7 sigils** (2 from nota + 5 from nexus)
-- **1 narrow-use token** (`=` for bind aliasing)
-- First-token-decidable at every choice point; no interior
-  scanning.
+| `(| Node @name |)` | `(Match (NodeQuery @name) Any)` |
+| `[| op1 op2 |]` | `(Atomic [op1 op2])` |
+| `{ name }` | `(Project pattern (Fields [name]) cardinality)` |
+| `{| pat1 pat2 |}` | `(Constrain [pat1 pat2] (Unify [name]) cardinality)` |
+| `~record` | `(Mutate slot record)` |
+| `!record` | `(Retract Kind slot)` |
+| `?record` | `(Validate request)` |
+| `*pattern` | `(Subscribe pattern mode backpressure)` |
+| `@a=@b` | Deferred; use `(Unify [a b])` where a typed record owns the behavior |
+| `< > <= >= !=` | Predicates are typed records |
 
 ---
 
-## Verbs
+## 8 · Current Daemon Status
 
-A nexus expression at the top level is *one verb*. The verb is
-determined by the leading sigil + delimiter:
+The existing `nexus-daemon` implementation is still Criome-specific. The Tier 0
+rewrite universalizes the spec first. The daemon becomes domain-parameterized
+only after another concrete domain translator needs it.
 
-| Form | Verb | What it does |
-|---|---|---|
-| `(R …)` | Assert | State a fact: this record exists |
-| `~(R …)` | Mutate | Replace the record at this identity |
-| `!(R …)` | Retract | Remove the record |
-| `?(R …)` | Validate | Dry-run: would this assert succeed? |
-| `~(\| pat \|) (R …)` | Mutate-with-pattern | For each match, overwrite |
-| `!(\| pat \|)` | Retract-matching | Remove matching records |
-| `?(\| pat \|)` | Validate query | Would the query return anything? |
-| `(\| pat \|)` | Query | Find matching records (one-shot) |
-| `*(\| pat \|)` | Subscribe | Match continuously; stream events |
-| `[\| op1 op2 … \|]` | Atomic batch | Run ops atomically (each carries its own sigil) |
-
-Patch is expressed as Mutate-with-pattern that preserves the
-unchanged fields:
-
-```nexus
-~(| Node @id _ |) (Node @id "new label")   ;; keep id, replace label
-```
-
----
-
-## Binds — names come from the schema, not the author
-
-A bind is a named hole in a pattern. The matcher walks records,
-finds shape-matching ones, and for each match records the actual
-values at bound positions.
-
-### The strict rule
-
-**The bind name at any position MUST equal the schema field name
-at that position.** The author cannot pick a different name. The
-parser rejects any other name with a clear error.
-
-```nexus
-;; struct Point { horizontal: f64, vertical: f64 }
-(| Point @horizontal @vertical |)   ;; ✓ both names match the schema
-(| Point @h @v |)                   ;; ✗ rejected: position 1 expects @horizontal
-(| Point @x @y |)                   ;; ✗ rejected: position 1 expects @horizontal
-```
-
-This is what makes the IR — `PatternField::Bind` — payload-free.
-The bind's "name" lives in the *Query record's field position;
-the text just confirms it. Aliasing (below) is the only way to
-introduce additional names, and even then the *first* name must
-match the schema.
-
-### Why this rule exists
-
-The auto-name rule is a manifestation of the project-wide
-perfect-specificity invariant:
-the IR carries no redundant data; field-position carries the
-binding identity; the text is a literal reading of that identity.
-Allowing `@h` for `@horizontal` would fork "what the parser sees"
-from "what the IR records," requiring a mapping table — which is
-exactly the kind of indirection the invariant rules out.
-
-### Binds **must** carry the `@` sigil
-
-Inside a pattern, every bind is `@<schema-field-name>`. A bare
-lowercase identifier in a pattern position is *not* an implicit
-bind — it is a bare-string literal matched by value equality
-(consistent with bare-identifier strings elsewhere in nota). The
-`@` sigil exists exactly to disambiguate bind from bare-string in
-pattern position.
-
-```nexus
-(| Tag @name |)        ;; ✓ bind on the `name` field; captures the string
-(| Tag name |)         ;; ✓ literal: match Tags whose `name` field equals "name"
-(| Tag wrongname |)    ;; ✓ literal: match Tags whose `name` field equals "wrongname"
-(| Tag @wrongname |)   ;; ✗ rejected — schema field is `name`, not `wrongname`
-```
-
-### Bind name lexical class
-
-Bind names — being schema field names — are camelCase or
-kebab-case (lowercase or `_` lead). PascalCase is reserved for
-type/variant names; `@Foo` is a parse error.
-
-```nexus
-(| Edge @from @to @kind |)   ;; ✓ all three field names are lowercase
-(| Edge @From @to @kind |)   ;; ✗ @From — uppercase leader is illegal
-```
-
-### `@data` for newtype inner
-
-Newtype structs (`struct Id(u32)`) have an unnamed inner value.
-The reserved bind name `@data` names it:
-
-```nexus
-(| Id @data |)
-```
-
-Matches any `Id` record, binds its inner `u32` to `@data`.
-
-### `_` wildcard
-
-Bare `_` matches any value at that position without binding:
-
-```nexus
-(| Point 3.0 _ |)
-```
-
-Matches Points whose horizontal is exactly `3.0` and whose
-vertical is anything (not bound).
-
-### Bind aliasing — `@a=@b`
-
-When you need two positions to unify (classic non-linear
-pattern), alias one bind name to a second:
-
-```nexus
-(| Pair @left=@right |)
-```
-
-Pos 1 (schema name `left`) is bound as both `@left` and `@right`.
-If `@right` is referenced elsewhere in the query (same pattern or
-another pattern in a conjunction), all occurrences must unify —
-forcing equality.
-
-Aliasing is the only place `=` appears in nexus. Anywhere else
-it's a syntax error.
-
-### Concrete values, binds, and wildcards mix freely
-
-```nexus
-(| Shape (Circle @radius) |)     ;; match Circle, bind radius
-(| Shape (Square @data) |)       ;; match Square newtype, bind inner
-(| Shape Active |)               ;; match the unit variant
-(| Config 0 _ @strict |)         ;; pos 1 = 0; pos 2 any; bind pos 3
-```
-
----
-
-## Constraining multiple patterns
-
-```nexus
-{|
-  (| Point @horizontal @vertical |)
-  (| Positive @horizontal |)
-  (| Positive @vertical |)
-|}
-```
-
-All three patterns must match simultaneously — the constrain
-delimiter is logical conjunction over its contents. Shared bind
-names (`@horizontal` here) unify across patterns.
-
----
-
-## Atomic batches
-
-Multiple edits processed all-or-nothing:
-
-```nexus
-[|
-  (Node a "Apple")
-  ~(Node b "Banana")
-  !(Node c "Cherry")
-|]
-```
-
-Each item carries its own verb sigil. The batch succeeds only if
-every item succeeds; on any failure, no item is applied.
-
----
-
-## Reply semantics
-
-Replies are messages — typed records — paired to requests by
-**position**. The N-th reply on a connection corresponds to the
-N-th request. There are no correlation IDs.
-
-Two message kinds carry every reply:
-
-- **`(Ok)`** — success acknowledgement. Empty record, no fields.
-- **`(Diagnostic …)`** — failure with reasons (level, code, site,
-  suggestions).
-
-### Per-verb shapes
-
-| Request | Reply at the same position |
-|---|---|
-| `(R …)` Assert | `(Ok)` on success, `(Diagnostic …)` on failure |
-| `~(R …)` Mutate | `(Ok)` or `(Diagnostic …)` |
-| `!(R …)` Retract | `(Ok)` or `(Diagnostic …)` |
-| `?(R …)` Validate | `(Ok)` if the operation would succeed; `(Diagnostic …)` if it would fail |
-| `~(\| pat \|) (R …)` Mutate-with-pattern | `[(Ok) (Ok) (Diagnostic …) (Ok) …]` — one outcome per matched record |
-| `!(\| pat \|)` Retract-matching | `[(Ok) (Ok) (Diagnostic …) …]` — one outcome per matched record |
-| `(\| pat \|)` Query | `[<r1> <r2> …]` — sequence of matching records (empty `[]` for zero matches) |
-| `[\| op1 op2 … \|]` Atomic batch | `[(Ok) (Ok) (Diagnostic …) (Ok)]` — one outcome per item in the batch; if any element is a `Diagnostic`, the whole batch rolled back atomically |
-
-The reply distinguishes by content: a sequence of `(Ok)` /
-`(Diagnostic)` is an edit-outcome reply; a sequence of records is
-a query reply.
-
-### Subscriptions
-
-`*(\| pat \|)` opens a subscription. **One subscription per
-connection.** The connection enters streaming mode; events arrive
-as they happen, each reusing the request-side sigil discipline:
-
-```
-(Node u "User")           ← a new record matched
-~(Node u "User updated")  ← a matching record was mutated
-!(Node u "User updated")  ← a matching record was retracted
-```
-
-There is **no initial snapshot** in the subscribe reply — issue a
-separate `(\| pat \|)` Query first if the client wants current
-state. End of subscription = client closes the socket; daemon
-reaps the subscription. No explicit Unsubscribe message.
-
----
-
-## Connection semantics
-
-- Client and daemon exchange nexus expressions over a stream
-  socket; the parser self-delimits on matched parens.
-- Requests and replies are strictly FIFO ordered on a single
-  connection. No correlation IDs.
-- One subscription per connection. For multiple subscriptions,
-  open multiple connections.
-- Close the socket to end. No graceful-goodbye message.
-
----
-
-## Canonical form
-
-Inherited from nota:
-
-- Source-declaration field order
-- Sorted map keys
-- Shortest-roundtrip numbers with mandatory `.` in floats
-- Single-space expression separators
-- `#`-prefixed lowercase hex bytes
-- Records positional, no field-name text
-
-nexus-specific:
-
-- `~`, `!`, `?`, `*`, `@` sit immediately before their target
-  with no intervening whitespace (`~(Point …)`, `@h`, `!0.0`,
-  `?(Node …)`, `*(\| Node @id \|)`).
-- `=` in `@a=@b` has no surrounding whitespace.
-- `_` is a bare token in pattern position; not valid as a value.
-
----
-
-## Implementation
-
-nota-codec +
-nota-derive
-provide the typed Decoder + Encoder + six derive macros that
-map any record kind to its wire form. Consumer code derives
-the appropriate Nota / Nexus derive on message types and
-round-trips them through nexus text.
-
-The dialect knob (`Decoder::nexus(text)` vs
-`Decoder::nota(text)`) selects the grammar. nota-only types
-that derive `NotaRecord` / `NotaEnum` / `NotaTransparent`
-round-trip in either dialect; types deriving `NexusPattern`
-or `NexusVerb` are nexus-only.
-
----
-
-## Repo layout
-
-```
-nexus/
-  spec/
-    grammar.md         ;; this file
-    examples/          ;; small example .nexus files
-  src/                 ;; the nexus daemon
-  ARCHITECTURE.md
-  flake.nix
-  LICENSE.md
-```

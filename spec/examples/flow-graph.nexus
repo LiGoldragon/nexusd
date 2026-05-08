@@ -1,68 +1,42 @@
-;; flow-graph.nexus — assert + query a small flow-graph using
-;; signal's first-milestone kinds (Node, Edge, Graph).
+;; flow-graph.nexus
 ;;
-;; Per Li 2026-04-26: nexus is the text equivalent of reading a
-;; known-type binary format. Records are positional, no field
-;; names appear in the text, no Assert wrapper. The reader/writer
-;; must know the schema to interpret each record.
+;; Explicit Tier 0 request records for a small flow graph.
 ;;
-;; Schema (signal/src/flow.rs):
-;;   Node  { name: String }                              ← name is a display handle; identity is the slot
-;;   Edge  { from: Slot, to: Slot, kind: RelationKind }  ← references by slot
-;;   Graph { title: String, nodes: Vec<Slot>, edges: Vec<Slot>, subgraphs: Vec<Slot> }
-;;
-;; RelationKind is a closed enum: Flow / DependsOn / Contains /
-;; References / Produces / Consumes / Calls / Implements / IsA.
-;;
-;; A bare record at top level IS an assertion. Slots (u64) are
-;; bare integers. Strings: bare ident-class tokens (camelCase /
-;; kebab-case / PascalCase) emit bare; anything else uses "..."
-;; or """...""". Unit variants (RelationKind, Option's None, etc.)
-;; emit bare PascalCase.
+;; Schema sketch:
+;;   Node  { name: String }
+;;   Edge  { from: Slot<Node>, to: Slot<Node>, kind: RelationKind }
+;;   Graph { title: String, nodes: Vec<Slot<Node>>, edges: Vec<Slot<Edge>>, subgraphs: Vec<Slot<Graph>> }
 
-;; ──────────────── Five Nodes ────────────────
-;; The slot is not specified — criome assigns one per Assert.
+;; Nodes
 
-(Node User)
-(Node "nexus daemon")
-(Node "criome daemon")
-(Node "forge daemon")
-(Node "sema redb store")
+(Assert (Node User))
+(Assert (Node "nexus daemon"))
+(Assert (Node "criome daemon"))
+(Assert (Node "forge daemon"))
+(Assert (Node "sema redb store"))
 
-;; ──────────────── Four Edges ────────────────
-;; The slots above were assigned 100..104 by criome at write
-;; time; we reference them as bare integers. Each Edge picks one
-;; RelationKind variant — bare PascalCase.
+;; Edges
 
-(Edge 100 101 Flow)        ;; user → nexus: data flows
-(Edge 101 102 Flow)        ;; nexus → criome: data flows
-(Edge 102 104 Produces)    ;; criome → sema: criome produces sema records
-(Edge 102 103 DependsOn)   ;; criome → forge: criome depends on forge's services
+(Assert (Edge 100 101 Flow))
+(Assert (Edge 101 102 Flow))
+(Assert (Edge 102 104 Produces))
+(Assert (Edge 102 103 DependsOn))
 
-;; ──────────────── The Graph ────────────────
+;; Graph
 
-(Graph "criome request flow"
-       [100 101 102 103 104]
-       [200 201 202 203]
-       [])
+(Assert
+  (Graph "criome request flow"
+         [100 101 102 103 104]
+         [200 201 202 203]
+         []))
 
-;; ──────────────── Queries ────────────────
+;; Matches
 
-;; All Nodes; bind name by schema-position.
-(| Node @name |)
+(Match (NodeQuery @name) Any)
+(Match (EdgeQuery 102 @to @kind) Any)
+(Match (EdgeQuery @from @to DependsOn) Any)
+(Match (GraphQuery "criome request flow" @nodes @edges @subgraphs) Any)
 
-;; Edges leaving slot 102 (criome). The bound `to` and `kind`
-;; come back; the literal 102 anchors `from`.
-(| Edge 102 @to @kind |)
+;; Projection
 
-;; All edges of a specific kind.
-(| Edge @from @to DependsOn |)
-
-;; The Graph by title — quoted-string in pattern position
-;; matches that exact value.
-(| Graph "criome request flow" @nodes @edges @subgraphs |)
-
-;; ──────────────── Projection ────────────────
-
-;; Project just the `name` field of each Node.
-(| Node @name |) { name }
+(Project (NodeQuery @name) (Fields [name]) Any)
