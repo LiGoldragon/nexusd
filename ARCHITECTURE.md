@@ -56,7 +56,7 @@ Does not own:
   primitives is performed by the derives in
   nota-derive
   (`NotaRecord`, `NotaEnum`, `NotaTransparent`,
-  `NotaTryTransparent`, `NexusVerb`) which signal types apply.
+  `NotaTryTransparent`, `NotaSum`) which signal types apply.
   `PatternField<T>`, `(Bind)`, and `(Wildcard)` live in
   signal-core as ordinary typed records over Nota syntax.
 - The signal envelope and per-verb typed IR — lives in
