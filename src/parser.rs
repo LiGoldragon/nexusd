@@ -3,12 +3,14 @@
 //! This is the current Criome-specific parser. It still accepts the
 //! pre-renovation M0 surface while `nota-codec` / `nota-derive` are moved to
 //! Nexus Tier 0. The Tier 0 target in `spec/grammar.md` is explicit
-//! request-record dispatch: `(Assert ...)`, `(Match ...)`, `(Subscribe ...)`,
+//! verb-record dispatch: `(Assert ...)`, `(Match ...)`, `(Subscribe ...)`,
 //! and so on.
 //!
-//! Until the codec boundary lands, this parser remains a compatibility adapter:
-//! it parses old Assert and Query forms directly, and the other old verb forms
-//! produce [`Error::VerbNotInM0Scope`].
+//! Until the signal boundary is rebased onto the twelve-verb contract, this
+//! parser remains a compatibility adapter: it parses old Assert forms and the
+//! old pattern delimiter that still maps to `signal::Request::Query`. `Query`
+//! is compatibility API naming, not a target Nexus verb; the Tier 0 target verb
+//! is `Match`.
 //!
 //! `Request::Handshake` does not appear in user-facing text —
 //! the daemon performs the handshake with criome internally
@@ -48,7 +50,7 @@ impl<'input> Parser<'input> {
             Some(Token::Bang) => Err(Error::VerbNotInM0Scope { verb: "Retract" }),
             Some(Token::Question) => Err(Error::VerbNotInM0Scope { verb: "Validate" }),
             Some(Token::Star) => Err(Error::VerbNotInM0Scope { verb: "Subscribe" }),
-            Some(Token::LBracketPipe) => Err(Error::VerbNotInM0Scope { verb: "AtomicBatch" }),
+            Some(Token::LBracketPipe) => Err(Error::VerbNotInM0Scope { verb: "Atomic" }),
             Some(other) => Err(nota_codec::Error::UnexpectedToken {
                 expected: "verb-opening sigil or delimiter — `(`, `(|`, `~`, `!`, `?`, `*`, or `[|`",
                 got: other,

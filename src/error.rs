@@ -27,7 +27,7 @@ pub enum Error {
     #[error("criome returned an unexpected reply shape after handshake — got `{got}`, expected `HandshakeAccepted` / `HandshakeRejected`")]
     HandshakePostReplyShape { got: &'static str },
 
-    #[error("nexus verb `{verb}` is not in the M0 parser scope (Assert and Query only)")]
+    #[error("nexus verb `{verb}` is not in the current compatibility parser scope")]
     VerbNotInM0Scope { verb: &'static str },
 
     /// A ractor `call` failed (timeout, sender dropped). Carries

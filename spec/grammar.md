@@ -10,8 +10,9 @@ The core rule:
 > type decides how a field decodes.
 
 Nexus is not an expression language. It has no operators, no function calls,
-and no special delimiter for query forms. A top-level message is a typed record,
-usually a variant of the closed `Request` or `Reply` enum.
+and no special delimiter for query forms. A top-level request is always one of
+the twelve closed Sema/Nexus verb records. Payload records such as `NodeQuery`
+may appear inside those verbs, but they are not standalone messages.
 
 ---
 
@@ -142,19 +143,30 @@ pattern position it is not a value.
 Every top-level request is a verb record. Tier 0 uses fully explicit request
 heads; a bare top-level domain record is not an implicit assert.
 
+The twelve verb heads are:
+
+```text
+Assert Subscribe Constrain Mutate Match Infer
+Retract Aggregate Project Atomic Validate Recurse
+```
+
+`Query` is not a verb. Query-like payload names may exist in Rust schemas
+(`NodeQuery`, `MatchQuery`, and similar), but the public text starts with the
+verb that owns the behavior.
+
 ```rust
 pub enum Request {
     Assert(AssertOperation),
-    Mutate(MutateOperation),
-    Retract(RetractOperation),
-    Atomic(AtomicBatch),
-    Match(MatchQuery),
     Subscribe(SubscribeQuery),
-    Validate(ValidateRequest),
+    Constrain(ConstrainQuery),
+    Mutate(MutateOperation),
+    Match(MatchQuery),
+    Infer(InferQuery),
+    Retract(RetractOperation),
     Aggregate(AggregateQuery),
     Project(ProjectQuery),
-    Constrain(ConstrainQuery),
-    Infer(InferQuery),
+    Atomic(AtomicOperation),
+    Validate(ValidateRequest),
     Recurse(RecurseQuery),
 }
 ```
@@ -235,4 +247,3 @@ new examples or new parser work.
 The existing `nexus-daemon` implementation is still Criome-specific. The Tier 0
 rewrite universalizes the spec first. The daemon becomes domain-parameterized
 only after another concrete domain translator needs it.
-

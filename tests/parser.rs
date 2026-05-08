@@ -56,17 +56,17 @@ fn parses_assert_edge_with_relation_kind() {
 }
 
 #[test]
-fn parses_query_node_with_bind() {
+fn parses_legacy_pattern_delimiter_as_match_compatibility_query() {
     let mut parser = Parser::new("(| Node @name |)");
     let request = parser
         .next_request()
-        .expect("Query parse must succeed")
+        .expect("legacy pattern parse must succeed")
         .expect("must yield a request");
     match request {
         Request::Query(QueryOperation::Node(node_query)) => {
             assert!(matches!(node_query.name, PatternField::Bind));
         }
-        other => panic!("expected Query::Node with bind, got {other:?}"),
+        other => panic!("expected old signal Query::Node with bind, got {other:?}"),
     }
 }
 
@@ -124,11 +124,11 @@ fn unsupported_verb_star_returns_verb_not_in_m0_scope() {
 }
 
 #[test]
-fn unsupported_verb_atomic_batch_returns_verb_not_in_m0_scope() {
+fn unsupported_verb_atomic_returns_verb_not_in_m0_scope() {
     let mut parser = Parser::new(r#"[| (Node "A") (Node "B") |]"#);
     let result = parser.next_request();
     assert!(matches!(
         result,
-        Err(nexus::Error::VerbNotInM0Scope { verb: "AtomicBatch" }),
+        Err(nexus::Error::VerbNotInM0Scope { verb: "Atomic" }),
     ));
 }

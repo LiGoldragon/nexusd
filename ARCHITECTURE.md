@@ -70,7 +70,7 @@ The nexus daemon is the *only* place where these meet:
 | Surface | Direction | Format | Contents |
 |---|---|---|---|
 | **client-facing** | client ↔ nexus | pure nexus text | the user's nexus expressions in / replies out |
-| **signal** | nexus ↔ criome | rkyv | language IR (`AssertOperation` / `MutateOperation` / `QueryOperation` / `Subscribe` / …) |
+| **signal** | nexus ↔ criome | rkyv | language IR for the twelve verbs (`Assert`, `Subscribe`, `Constrain`, `Mutate`, `Match`, `Infer`, `Retract`, `Aggregate`, `Project`, `Atomic`, `Validate`, `Recurse`) |
 
 Nexus text is the only non-signal messaging surface in the
 sema-ecosystem. It is transient — never persisted, never
@@ -87,7 +87,7 @@ The daemon holds, per open connection:
 Nothing else. No correlation-id mappings (replies pair to
 requests by **position** on the connection — FIFO). No
 fallback-file dispatch. No resume after disconnect (durable
-work is criome-state, fetched via Query). No sema cache.
+work is criome-state, fetched via `Match`). No sema cache.
 
 ## Code map
 
@@ -103,7 +103,7 @@ nexus/
     ├── listener.rs               — Listener actor: UDS accept loop, spawns Connection per accept
     ├── connection.rs             — Connection actor: per-client text shuttle (single-message Run lifecycle)
     ├── criome_link.rs            — CriomeLink struct: post-handshake signal connection (single-owner, not an actor)
-    ├── parser.rs                 — Parser struct: current Criome parser; awaiting Tier 0 request-record rewrite
+    ├── parser.rs                 — Parser struct: current Criome parser; awaiting Tier 0 verb-record rewrite
     ├── renderer.rs               — Renderer struct: signal::Reply → Tier 0 text
     ├── main.rs                   — nexus-daemon entry: env config, Actor::spawn root Daemon, await join handle
     └── bin/
@@ -144,9 +144,9 @@ state and a message protocol — see `lore/rust/ractor.md`.
   one canonical text rendering. The daemon never instantiates
   a generic record and figures out its kind later — it parses
   text directly into the precise typed payload of the verb
-  the text expresses (`AssertOperation::Node(node)`,
-  `MutateOperation::Edge { slot, new, expected_rev }`,
-  `QueryOperation::Graph(GraphQuery{…})`). Failure to parse
+  the text expresses (`Assert(Node { … })`,
+  `Mutate(MutateOperation { … })`,
+  `Match(GraphQuery { … })`). Failure to parse
   into a known kind is a parse-time error, not a downstream
   validation miss.
 
@@ -156,9 +156,9 @@ state and a message protocol — see `lore/rust/ractor.md`.
 sequences, explicit request records, `@`, and schema-driven
 `PatternField<T>` decoding. The renderer now emits named `SlotBinding`
 records for slotted query replies. The current parser still carries the
-previous Criome-specific M0 surface until `nota-codec` / `nota-derive` stop
-emitting old pattern delimiters. Domain-parameterizing the daemon waits until a
-second concrete translator exists.
+previous Criome-specific M0 surface until `signal` is rebased onto the
+twelve-verb contract. Domain-parameterizing the daemon waits until a second
+concrete translator exists.
 
 ## What nexus-daemon does — and only that
 
@@ -217,7 +217,7 @@ post-MVP, plus any future verb) lands in three places:
 
 1. The verb's typed payload + closed-enum variant in
    signal.
-2. A new arm in [`Parser`](src/parser.rs) — request-record dispatch from the
+2. A new arm in [`Parser`](src/parser.rs) — verb-record dispatch from the
    PascalCase verb head to the typed payload.
 3. A new arm in [`Renderer`](src/renderer.rs) — typed reply →
    nexus text, one canonical rendering per typed shape.
