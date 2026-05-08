@@ -5,8 +5,7 @@
 
 use nexus::Renderer;
 use signal::{
-    Diagnostic, DiagnosticLevel, Edge, Node, Ok, OutcomeMessage, Records, RelationKind, Reply,
-    Slot,
+    Diagnostic, DiagnosticLevel, Edge, Node, Ok, OutcomeMessage, Records, RelationKind, Reply, Slot,
 };
 
 #[test]
@@ -34,7 +33,7 @@ fn diagnostic_outcome_renders_with_level_code_message() {
         .expect("render");
     assert_eq!(
         renderer.into_text(),
-        r#"(Diagnostic Error "E0042" "thing went wrong")"#,
+        r#"(Diagnostic Error E0042 "thing went wrong")"#,
     );
 }
 
@@ -64,13 +63,23 @@ fn populated_records_node_renders_each_node_as_record() {
     let mut renderer = Renderer::new();
     renderer
         .render_reply(&Reply::Records(Records::Node(vec![
-            (Slot::from(1024u64), Node { name: "User".to_string() }),
-            (Slot::from(1025u64), Node { name: "Group".to_string() }),
+            (
+                Slot::from(1024u64),
+                Node {
+                    name: "User".to_string(),
+                },
+            ),
+            (
+                Slot::from(1025u64),
+                Node {
+                    name: "Group".to_string(),
+                },
+            ),
         ])))
         .expect("render");
     assert_eq!(
         renderer.into_text(),
-        r#"[(SlotBinding 1024 (Node "User")) (SlotBinding 1025 (Node "Group"))]"#
+        "[(SlotBinding 1024 (Node User)) (SlotBinding 1025 (Node Group))]"
     );
 }
 
@@ -96,15 +105,15 @@ fn populated_records_edge_renders_each_with_relation_kind() {
 #[test]
 fn handshake_accepted_in_user_reply_stream_is_a_protocol_error() {
     let mut renderer = Renderer::new();
-    let result = renderer.render_reply(&Reply::HandshakeAccepted(
-        signal::HandshakeReply {
-            server_version: signal::SIGNAL_PROTOCOL_VERSION,
-            server_id: Slot::from(0u64),
-        },
-    ));
+    let result = renderer.render_reply(&Reply::HandshakeAccepted(signal::HandshakeReply {
+        server_version: signal::SIGNAL_PROTOCOL_VERSION,
+        server_id: Slot::from(0u64),
+    }));
     assert!(matches!(
         result,
-        Err(nexus::Error::HandshakePostReplyShape { got: "HandshakeAccepted" }),
+        Err(nexus::Error::HandshakePostReplyShape {
+            got: "HandshakeAccepted"
+        }),
     ));
 }
 
@@ -117,12 +126,14 @@ fn two_replies_separate_with_newline() {
     renderer
         .render_reply(&Reply::Records(Records::Node(vec![(
             Slot::from(1024u64),
-            Node { name: "User".to_string() },
+            Node {
+                name: "User".to_string(),
+            },
         )])))
         .expect("second");
     assert_eq!(
         renderer.into_text(),
-        "(Ok)\n[(SlotBinding 1024 (Node \"User\"))]"
+        "(Ok)\n[(SlotBinding 1024 (Node User))]"
     );
 }
 
@@ -133,6 +144,6 @@ fn local_error_renders_as_diagnostic_with_code() {
         .render_local_error(&nexus::Error::VerbNotInM0Scope { verb: "Mutate" })
         .expect("render");
     let text = renderer.into_text();
-    assert!(text.starts_with("(Diagnostic Error \"E0099\""));
+    assert!(text.starts_with("(Diagnostic Error E0099"));
     assert!(text.contains("Mutate"));
 }

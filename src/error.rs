@@ -22,9 +22,13 @@ pub enum Error {
     FrameTooLarge { length: usize },
 
     #[error("criome rejected the handshake: {reason:?}")]
-    HandshakeRejected { reason: signal::HandshakeRejectionReason },
+    HandshakeRejected {
+        reason: signal::HandshakeRejectionReason,
+    },
 
-    #[error("criome returned an unexpected reply shape after handshake — got `{got}`, expected `HandshakeAccepted` / `HandshakeRejected`")]
+    #[error(
+        "criome returned an unexpected reply shape after handshake — got `{got}`, expected `HandshakeAccepted` / `HandshakeRejected`"
+    )]
     HandshakePostReplyShape { got: &'static str },
 
     #[error("nexus verb `{verb}` is not in the current compatibility parser scope")]

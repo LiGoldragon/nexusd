@@ -35,7 +35,9 @@ impl Default for Renderer {
 
 impl Renderer {
     pub fn new() -> Self {
-        Self { output: String::new() }
+        Self {
+            output: String::new(),
+        }
     }
 
     /// Append the rendered text of `reply` to the buffer.
@@ -67,21 +69,19 @@ impl Renderer {
                 Ok(())
             }
             Reply::Records(records) => Self::render_records(records, encoder),
-            Reply::HandshakeAccepted(_) => {
-                Err(Error::HandshakePostReplyShape { got: "HandshakeAccepted" })
-            }
-            Reply::HandshakeRejected(_) => {
-                Err(Error::HandshakePostReplyShape { got: "HandshakeRejected" })
-            }
+            Reply::HandshakeAccepted(_) => Err(Error::HandshakePostReplyShape {
+                got: "HandshakeAccepted",
+            }),
+            Reply::HandshakeRejected(_) => Err(Error::HandshakePostReplyShape {
+                got: "HandshakeRejected",
+            }),
         }
     }
 
     fn render_outcome(outcome: &OutcomeMessage, encoder: &mut Encoder) -> Result<()> {
         match outcome {
             OutcomeMessage::Ok(ok) => Ok(ok.encode(encoder)?),
-            OutcomeMessage::Diagnostic(diagnostic) => {
-                Self::render_diagnostic(diagnostic, encoder)
-            }
+            OutcomeMessage::Diagnostic(diagnostic) => Self::render_diagnostic(diagnostic, encoder),
         }
     }
 

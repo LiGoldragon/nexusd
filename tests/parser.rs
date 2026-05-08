@@ -6,9 +6,7 @@
 //! `Request` shape.
 
 use nexus::Parser;
-use signal::{
-    AssertOperation, Edge, Node, PatternField, QueryOperation, RelationKind, Request, Slot,
-};
+use signal::{AssertOperation, Edge, Node, RelationKind, Request, Slot};
 
 #[test]
 fn empty_input_returns_none() {
@@ -20,7 +18,9 @@ fn empty_input_returns_none() {
 #[test]
 fn whitespace_only_input_returns_none() {
     let mut parser = Parser::new("   \n\n  ;; just a comment\n   ");
-    let result = parser.next_request().expect("whitespace parse must succeed");
+    let result = parser
+        .next_request()
+        .expect("whitespace parse must succeed");
     assert!(result.is_none(), "whitespace + comments must yield None");
 }
 
@@ -33,7 +33,9 @@ fn parses_assert_node() {
         .expect("must yield a request");
     assert_eq!(
         request,
-        Request::Assert(AssertOperation::Node(Node { name: "User".to_string() }))
+        Request::Assert(AssertOperation::Node(Node {
+            name: "User".to_string()
+        }))
     );
     assert!(parser.next_request().expect("EOF").is_none());
 }
@@ -56,79 +58,77 @@ fn parses_assert_edge_with_relation_kind() {
 }
 
 #[test]
-fn parses_legacy_pattern_delimiter_as_match_compatibility_query() {
-    let mut parser = Parser::new("(| Node @name |)");
-    let request = parser
-        .next_request()
-        .expect("legacy pattern parse must succeed")
-        .expect("must yield a request");
-    match request {
-        Request::Query(QueryOperation::Node(node_query)) => {
-            assert!(matches!(node_query.name, PatternField::Bind));
-        }
-        other => panic!("expected old signal Query::Node with bind, got {other:?}"),
-    }
-}
-
-#[test]
 fn parses_two_requests_in_sequence() {
-    let mut parser = Parser::new(r#"(Node "User") (| Node @name |)"#);
+    let mut parser = Parser::new(r#"(Node "User") (Edge 100 200 DependsOn)"#);
 
     let first = parser.next_request().expect("first").expect("yields");
     assert!(matches!(first, Request::Assert(AssertOperation::Node(_))));
 
     let second = parser.next_request().expect("second").expect("yields");
-    assert!(matches!(second, Request::Query(QueryOperation::Node(_))));
+    assert!(matches!(second, Request::Assert(AssertOperation::Edge(_))));
 
     assert!(parser.next_request().expect("EOF").is_none());
 }
 
 #[test]
-fn unsupported_verb_tilde_returns_verb_not_in_m0_scope() {
+fn retired_tilde_sigils_are_rejected_by_codec() {
     let mut parser = Parser::new(r#"~(Node "User")"#);
     let result = parser.next_request();
     assert!(matches!(
         result,
-        Err(nexus::Error::VerbNotInM0Scope { verb: "Mutate" })
+        Err(nexus::Error::Codec(nota_codec::Error::UnexpectedChar {
+            character: '~',
+            ..
+        }))
     ));
 }
 
 #[test]
-fn unsupported_verb_bang_returns_verb_not_in_m0_scope() {
+fn retired_bang_sigils_are_rejected_by_codec() {
     let mut parser = Parser::new(r#"!(Node "User")"#);
     let result = parser.next_request();
     assert!(matches!(
         result,
-        Err(nexus::Error::VerbNotInM0Scope { verb: "Retract" }),
+        Err(nexus::Error::Codec(
+            nota_codec::Error::ReservedComparisonToken { token: '!', .. }
+        )),
     ));
 }
 
 #[test]
-fn unsupported_verb_question_returns_verb_not_in_m0_scope() {
+fn retired_question_sigils_are_rejected_by_codec() {
     let mut parser = Parser::new(r#"?(Node "User")"#);
     let result = parser.next_request();
     assert!(matches!(
         result,
-        Err(nexus::Error::VerbNotInM0Scope { verb: "Validate" }),
+        Err(nexus::Error::Codec(nota_codec::Error::UnexpectedChar {
+            character: '?',
+            ..
+        })),
     ));
 }
 
 #[test]
-fn unsupported_verb_star_returns_verb_not_in_m0_scope() {
-    let mut parser = Parser::new("*(| Node @name |)");
+fn retired_star_sigils_are_rejected_by_codec() {
+    let mut parser = Parser::new("*(Node User)");
     let result = parser.next_request();
     assert!(matches!(
         result,
-        Err(nexus::Error::VerbNotInM0Scope { verb: "Subscribe" }),
+        Err(nexus::Error::Codec(nota_codec::Error::UnexpectedChar {
+            character: '*',
+            ..
+        })),
     ));
 }
 
 #[test]
-fn unsupported_verb_atomic_returns_verb_not_in_m0_scope() {
+fn retired_atomic_delimiters_are_rejected_by_codec() {
     let mut parser = Parser::new(r#"[| (Node "A") (Node "B") |]"#);
     let result = parser.next_request();
     assert!(matches!(
         result,
-        Err(nexus::Error::VerbNotInM0Scope { verb: "Atomic" }),
+        Err(nexus::Error::Codec(
+            nota_codec::Error::UnexpectedToken { .. }
+        )),
     ));
 }

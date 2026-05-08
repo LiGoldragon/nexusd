@@ -54,7 +54,9 @@ impl State {
         self.client.read_to_string(&mut text_input).await?;
 
         let renderer = Self::process(&text_input, &self.criome_socket_path).await?;
-        self.client.write_all(renderer.into_text().as_bytes()).await?;
+        self.client
+            .write_all(renderer.into_text().as_bytes())
+            .await?;
         Ok(())
     }
 

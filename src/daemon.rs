@@ -49,7 +49,9 @@ impl Actor for Daemon {
         )
         .await?;
 
-        Ok(State { listener: listener_ref })
+        Ok(State {
+            listener: listener_ref,
+        })
     }
 
     async fn handle(

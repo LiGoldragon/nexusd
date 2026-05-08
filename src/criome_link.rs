@@ -10,9 +10,7 @@
 
 use std::path::Path;
 
-use signal::{
-    Body, Frame, HandshakeRequest, Reply, Request, SIGNAL_PROTOCOL_VERSION,
-};
+use signal::{Body, Frame, HandshakeRequest, Reply, Request, SIGNAL_PROTOCOL_VERSION};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::UnixStream;
 
@@ -48,9 +46,9 @@ impl CriomeLink {
         let reply_frame = self.read_frame().await?;
         match reply_frame.body {
             Body::Reply(reply) => Ok(reply),
-            Body::Request(_) => {
-                Err(Error::HandshakePostReplyShape { got: "Body::Request" })
-            }
+            Body::Request(_) => Err(Error::HandshakePostReplyShape {
+                got: "Body::Request",
+            }),
         }
     }
 
@@ -70,25 +68,26 @@ impl CriomeLink {
             Body::Reply(Reply::HandshakeRejected(reason)) => {
                 Err(Error::HandshakeRejected { reason })
             }
-            Body::Reply(Reply::Outcome(_)) => {
-                Err(Error::HandshakePostReplyShape { got: "Reply::Outcome" })
-            }
-            Body::Reply(Reply::Outcomes(_)) => {
-                Err(Error::HandshakePostReplyShape { got: "Reply::Outcomes" })
-            }
-            Body::Reply(Reply::Records(_)) => {
-                Err(Error::HandshakePostReplyShape { got: "Reply::Records" })
-            }
-            Body::Request(_) => {
-                Err(Error::HandshakePostReplyShape { got: "Body::Request" })
-            }
+            Body::Reply(Reply::Outcome(_)) => Err(Error::HandshakePostReplyShape {
+                got: "Reply::Outcome",
+            }),
+            Body::Reply(Reply::Outcomes(_)) => Err(Error::HandshakePostReplyShape {
+                got: "Reply::Outcomes",
+            }),
+            Body::Reply(Reply::Records(_)) => Err(Error::HandshakePostReplyShape {
+                got: "Reply::Records",
+            }),
+            Body::Request(_) => Err(Error::HandshakePostReplyShape {
+                got: "Body::Request",
+            }),
         }
     }
 
     async fn write_frame(&mut self, frame: &Frame) -> Result<()> {
         let bytes = frame.encode();
-        let length = u32::try_from(bytes.len())
-            .map_err(|_| Error::FrameTooLarge { length: bytes.len() })?;
+        let length = u32::try_from(bytes.len()).map_err(|_| Error::FrameTooLarge {
+            length: bytes.len(),
+        })?;
         self.stream.write_all(&length.to_be_bytes()).await?;
         self.stream.write_all(&bytes).await?;
         Ok(())

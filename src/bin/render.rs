@@ -29,7 +29,9 @@ fn main() -> Result<()> {
         match frame.body {
             Body::Reply(reply) => renderer.render_reply(&reply)?,
             Body::Request(_) => {
-                return Err(Error::HandshakePostReplyShape { got: "Body::Request" });
+                return Err(Error::HandshakePostReplyShape {
+                    got: "Body::Request",
+                });
             }
         }
     }

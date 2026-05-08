@@ -25,8 +25,9 @@ fn main() -> Result<()> {
             body: Body::Request(request),
         };
         let bytes = frame.encode();
-        let length = u32::try_from(bytes.len())
-            .map_err(|_| Error::FrameTooLarge { length: bytes.len() })?;
+        let length = u32::try_from(bytes.len()).map_err(|_| Error::FrameTooLarge {
+            length: bytes.len(),
+        })?;
         stdout.write_all(&length.to_be_bytes())?;
         stdout.write_all(&bytes)?;
     }

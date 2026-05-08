@@ -26,13 +26,19 @@ async fn main() -> Result<()> {
         .unwrap_or_else(|_| DEFAULT_CRIOME_SOCKET.to_string())
         .into();
 
-    eprintln!("nexus-daemon: forwarding to criome at {}", criome_socket_path.display());
+    eprintln!(
+        "nexus-daemon: forwarding to criome at {}",
+        criome_socket_path.display()
+    );
     eprintln!("nexus-daemon: binding UDS at {}", socket_path.display());
 
     let (_daemon_ref, daemon_handle) = Actor::spawn(
         Some("daemon".into()),
         Daemon,
-        Arguments { socket_path, criome_socket_path },
+        Arguments {
+            socket_path,
+            criome_socket_path,
+        },
     )
     .await
     .map_err(|error| Error::ActorSpawn(error.to_string()))?;
