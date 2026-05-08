@@ -25,28 +25,28 @@
 ;; Read requests
 ;; ------------------------------------------------------------------
 
-(Match (NodeQuery @name) Any)
-(Match (EdgeQuery @from @to @kind) Any)
-(Match (EdgeQuery 100 @to Flow) (Limit 10))
+(Match (NodeQuery (Bind)) Any)
+(Match (EdgeQuery (Bind) (Bind) (Bind)) Any)
+(Match (EdgeQuery 100 (Bind) Flow) (Limit 10))
 
-(Subscribe (NodeQuery @name) ImmediateExtension Block)
+(Subscribe (NodeQuery (Bind)) ImmediateExtension Block)
 (Validate (Assert (Node "dry run")))
 
 ;; ------------------------------------------------------------------
 ;; Reductions and composition
 ;; ------------------------------------------------------------------
 
-(Aggregate (NodeQuery @name) Count)
-(Project (NodeQuery @name) (Fields [name]) Any)
+(Aggregate (NodeQuery (Bind)) Count)
+(Project (NodeQuery (Bind)) (Fields [name]) Any)
 
 (Constrain
-  [(EdgeQuery 100 @to Flow)
-   (NodeQuery @to)]
+  [(EdgeQuery 100 (Bind) Flow)
+   (NodeQuery (Bind))]
   (Unify [to])
   Any)
 
-(Infer (NodeQuery @name) StandardOntology)
-(Recurse (NodeQuery @name) (EdgeQuery @from @to DependsOn) Fixpoint)
+(Infer (NodeQuery (Bind)) StandardOntology)
+(Recurse (NodeQuery (Bind)) (EdgeQuery (Bind) (Bind) DependsOn) Fixpoint)
 
 ;; ------------------------------------------------------------------
 ;; Replies

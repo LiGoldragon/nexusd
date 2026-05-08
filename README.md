@@ -9,8 +9,7 @@ The nexus language: spec + translator daemon.
 - `spec/examples/` — illustrative `.nexus` files
   showing the grammar in use.
 - `src/` — the daemon implementation. Parses nexus text via
-  nota-codec at
-  `Dialect::Nexus`, builds
+  the Nota grammar, builds
   signal frames, dials
   criome over UDS, serialises replies back to text.
 

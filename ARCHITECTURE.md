@@ -21,9 +21,9 @@ client (nexus-cli, agents, editors, shell scripts)
    │
    ▼
 ┌──────────┐
-│  nexus   │   parse text via nota-codec (Decoder::nexus)
+│  nexus   │   parse text via nota-codec (Decoder::new)
 │ (daemon) │   build signal frames, send to criome
-│          │   receive signal replies, render to text via nota-codec (Encoder::nexus)
+│          │   receive signal replies, render to text via nota-codec (Encoder::new)
 └────┬─────┘
      │
      │ signal (rkyv envelope around per-verb typed payloads)
@@ -52,12 +52,13 @@ Does not own:
 
 - Lexer / Decoder / Encoder kernel — lives in
   nota-codec.
-  Per-kind parsing of records, pattern records, verbs, and
+  Per-kind parsing of records, typed pattern markers, verbs, and
   primitives is performed by the derives in
   nota-derive
   (`NotaRecord`, `NotaEnum`, `NotaTransparent`,
-  `NotaTryTransparent`, `NexusPattern`, `NexusVerb`) which
-  signal types apply.
+  `NotaTryTransparent`, `NexusVerb`) which signal types apply.
+  `PatternField<T>`, `(Bind)`, and `(Wildcard)` live in
+  signal-core as ordinary typed records over Nota syntax.
 - The signal envelope and per-verb typed IR — lives in
   signal.
 - Sema state — that's criome's exclusive concern.
@@ -153,12 +154,12 @@ state and a message protocol — see `lore/rust/ractor.md`.
 ## Status
 
 **Renovating.** The spec is being renovated to Nexus Tier 0: records,
-sequences, explicit request records, `@`, and schema-driven
-`PatternField<T>` decoding. The renderer now emits named `SlotBinding`
-records for slotted query replies. The current parser still carries the
-previous Criome-specific M0 surface until `signal` is rebased onto the
-twelve-verb contract. Domain-parameterizing the daemon waits until a second
-concrete translator exists.
+sequences, explicit request records, and schema-driven `PatternField<T>`
+decoding through ordinary `(Bind)` and `(Wildcard)` records. The renderer now
+emits named `SlotBinding` records for slotted query replies. The current parser
+still carries the previous Criome-specific M0 surface until `signal` is rebased
+onto the twelve-verb contract. Domain-parameterizing the daemon waits until a
+second concrete translator exists.
 
 ## What nexus-daemon does — and only that
 

@@ -43,7 +43,7 @@ impl Renderer {
     /// Append the rendered text of `reply` to the buffer.
     /// Inserts a `\n` separator before non-first replies.
     pub fn render_reply(&mut self, reply: &Reply) -> Result<()> {
-        let mut encoder = Encoder::nexus();
+        let mut encoder = Encoder::new();
         Self::render_into(reply, &mut encoder)?;
         if !self.output.is_empty() {
             self.output.push('\n');
@@ -106,19 +106,22 @@ impl Renderer {
         }
     }
 
-    fn render_node_bindings(items: &[(Slot, Node)], encoder: &mut Encoder) -> Result<()> {
+    fn render_node_bindings(items: &[(Slot<Node>, Node)], encoder: &mut Encoder) -> Result<()> {
         Self::render_slot_bindings(items, encoder)
     }
 
-    fn render_edge_bindings(items: &[(Slot, Edge)], encoder: &mut Encoder) -> Result<()> {
+    fn render_edge_bindings(items: &[(Slot<Edge>, Edge)], encoder: &mut Encoder) -> Result<()> {
         Self::render_slot_bindings(items, encoder)
     }
 
-    fn render_graph_bindings(items: &[(Slot, Graph)], encoder: &mut Encoder) -> Result<()> {
+    fn render_graph_bindings(items: &[(Slot<Graph>, Graph)], encoder: &mut Encoder) -> Result<()> {
         Self::render_slot_bindings(items, encoder)
     }
 
-    fn render_slot_bindings<Value>(items: &[(Slot, Value)], encoder: &mut Encoder) -> Result<()>
+    fn render_slot_bindings<Value>(
+        items: &[(Slot<Value>, Value)],
+        encoder: &mut Encoder,
+    ) -> Result<()>
     where
         Value: NotaEncode,
     {
@@ -138,7 +141,7 @@ impl Renderer {
     /// when the parser rejects user text before the request
     /// can reach criome.
     pub fn render_local_error(&mut self, error: &Error) -> Result<()> {
-        let mut encoder = Encoder::nexus();
+        let mut encoder = Encoder::new();
         encoder.start_record("Diagnostic")?;
         encoder.write_pascal_identifier("Error")?;
         encoder.write_string(Self::local_error_code(error))?;

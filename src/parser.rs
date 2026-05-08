@@ -27,7 +27,7 @@ impl<'input> Parser<'input> {
     /// Open a parser over a slice of nexus text.
     pub fn new(input: &'input str) -> Self {
         Self {
-            decoder: Decoder::nexus(input),
+            decoder: Decoder::new(input),
         }
     }
 

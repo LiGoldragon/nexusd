@@ -18,14 +18,15 @@ may appear inside those verbs, but they are not standalone messages.
 
 ## 1 · Grammar Surface
 
-The Tier 0 grammar has two delimiter pairs and two in-position pattern markers.
+The Tier 0 grammar is ordinary Nota syntax. Pattern intent is represented by
+typed records in typed positions, not by a separate Nexus dialect.
 
 | Construct | Form | Role |
 |---|---|---|
 | Record | `(Kind field0 field1 ...)` | Named positional composite |
 | Sequence | `[elem0 elem1 ...]` | Ordered collection |
-| Bind | `@fieldname` | Pattern bind in a `PatternField<T>` position |
-| Wildcard | `_` | Pattern wildcard in a `PatternField<T>` position |
+| Bind | `(Bind)` | Pattern bind in a `PatternField<T>` position |
+| Wildcard | `(Wildcard)` | Pattern wildcard in a `PatternField<T>` position |
 | Path | `Name:Nested` | Nested name separator |
 | Comment | `;; ...` | Line comment discarded by the parser |
 | Byte literal | `#a1b2c3` | Lowercase even-length hex bytes |
@@ -41,7 +42,6 @@ pub enum Token {
     RParen,
     LBracket,
     RBracket,
-    At,
     Colon,
     Ident(String),
     Bool(bool),
@@ -53,8 +53,8 @@ pub enum Token {
 }
 ```
 
-The wildcard `_` is an identifier token. It becomes a wildcard only when the
-receiving type is `PatternField<T>`.
+`@`, `_` as wildcard, and piped delimiters are retired syntax. A pure Nota
+lexer rejects `@`; `_` is just an identifier and has no wildcard privilege.
 
 ---
 
@@ -107,10 +107,11 @@ separate set or map delimiter.
 
 ## 4 · Patterns
 
-Patterns are schema-driven. There is no pattern delimiter.
+Patterns are schema-driven. There is no pattern delimiter and no pattern
+lexer mode.
 
 The same text delimiter `()` is used for data records and query records. The
-receiving type decides whether `@field` and `_` are allowed.
+receiving type decides whether `(Bind)` and `(Wildcard)` are allowed.
 
 ```rust
 struct Node {
@@ -125,16 +126,20 @@ struct NodeQuery {
 | Text | Receiving type | Meaning |
 |---|---|---|
 | `(Node User)` | `Node` | concrete data record |
-| `(NodeQuery @name)` | `NodeQuery` | bind the `name` field |
-| `(NodeQuery _)` | `NodeQuery` | wildcard match |
+| `(NodeQuery (Bind))` | `NodeQuery` | bind the `name` field |
+| `(NodeQuery (Wildcard))` | `NodeQuery` | wildcard match |
 | `(NodeQuery User)` | `NodeQuery` | concrete field match |
-| `(Node @name)` | `Node` | parse error |
+| `(Node (Bind))` | `Node` | parse error |
 
-`@fieldname` must match the schema field name at that position. The position
-already carries identity; the marker confirms the field being bound.
+`(Bind)` means "bind this typed field". The position already carries field
+identity, so the text does not repeat a field name. Bind names used by
+constraint records, projections, and replies are owned by those surrounding
+typed records.
 
-`_` is valid only when the receiving type is `PatternField<T>`. Outside a
-pattern position it is not a value.
+`(Bind)` and `(Wildcard)` are valid only when the receiving type is
+`PatternField<T>`. Outside a pattern position they are ordinary records and
+must fail if the destination type expects a string, slot, enum, or other
+non-pattern value.
 
 ---
 
@@ -181,16 +186,16 @@ Examples:
 (Retract Node 100)
 (Atomic [(Assert (Node A)) (Assert (Node B))])
 
-(Match (NodeQuery @name) Any)
-(Match (EdgeQuery 100 @to Flow) (Limit 10))
-(Subscribe (NodeQuery @name) ImmediateExtension Block)
+(Match (NodeQuery (Bind)) Any)
+(Match (EdgeQuery 100 (Bind) Flow) (Limit 10))
+(Subscribe (NodeQuery (Bind)) ImmediateExtension Block)
 (Validate (Assert (Node "dry run")))
 
-(Aggregate (NodeQuery @name) Count)
-(Project (NodeQuery @name) (Fields [name]) Any)
-(Constrain [(EdgeQuery 100 @to Flow) (NodeQuery @to)] (Unify [to]) Any)
-(Infer (NodeQuery @name) StandardOntology)
-(Recurse (NodeQuery @name) (EdgeQuery @from @to DependsOn) Fixpoint)
+(Aggregate (NodeQuery (Bind)) Count)
+(Project (NodeQuery (Bind)) (Fields [name]) Any)
+(Constrain [(EdgeQuery 100 (Bind) Flow) (NodeQuery (Bind))] (Unify [to]) Any)
+(Infer (NodeQuery (Bind)) StandardOntology)
+(Recurse (NodeQuery (Bind)) (EdgeQuery (Bind) (Bind) DependsOn) Fixpoint)
 ```
 
 Slot references are bare integers in slot-typed positions. The schema tells the
@@ -229,7 +234,7 @@ new examples or new parser work.
 
 | Dropped form | Replacement |
 |---|---|
-| `(| Node @name |)` | `(Match (NodeQuery @name) Any)` |
+| `(| Node @name |)` | `(Match (NodeQuery (Bind)) Any)` |
 | `[| op1 op2 |]` | `(Atomic [op1 op2])` |
 | `{ name }` | `(Project pattern (Fields [name]) cardinality)` |
 | `{| pat1 pat2 |}` | `(Constrain [pat1 pat2] (Unify [name]) cardinality)` |
@@ -237,6 +242,7 @@ new examples or new parser work.
 | `!record` | `(Retract Kind slot)` |
 | `?record` | `(Validate request)` |
 | `*pattern` | `(Subscribe pattern mode backpressure)` |
+| `@name`, `_` | `(Bind)`, `(Wildcard)` in a `PatternField<T>` position |
 | `@a=@b` | Deferred; use `(Unify [a b])` where a typed record owns the behavior |
 | `< > <= >= !=` | Predicates are typed records |
 

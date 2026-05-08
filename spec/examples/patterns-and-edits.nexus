@@ -3,13 +3,13 @@
 ;; Tier 0 examples for bind, wildcard, mutate, retract, validate,
 ;; subscribe, constrain, and atomic requests.
 
-;; Bind positions use schema field names.
+;; Bind positions are typed records.
 
-(Match (EdgeQuery @from @to @kind) Any)
+(Match (EdgeQuery (Bind) (Bind) (Bind)) Any)
 
 ;; Wildcard matches without binding.
 
-(Match (EdgeQuery _ _ @kind) Any)
+(Match (EdgeQuery (Wildcard) (Wildcard) (Bind)) Any)
 
 ;; Concrete field matching.
 
@@ -30,19 +30,19 @@
 
 ;; Subscribe opens a continuous match on the connection.
 
-(Subscribe (NodeQuery @name) ImmediateExtension Block)
+(Subscribe (NodeQuery (Bind)) ImmediateExtension Block)
 
 ;; Constrain composes multiple patterns and names the bind set that must unify.
 
 (Constrain
-  [(EdgeQuery @from @to DependsOn)
-   (NodeQuery @to)]
+  [(EdgeQuery (Bind) (Bind) DependsOn)
+   (NodeQuery (Bind))]
   (Unify [to])
   Any)
 
 ;; Projection selects fields from a matched shape.
 
-(Project (EdgeQuery @from @to @kind) (Fields [from to kind]) Any)
+(Project (EdgeQuery (Bind) (Bind) (Bind)) (Fields [from to kind]) Any)
 
 ;; Atomic bundles requests as all-or-nothing state change.
 

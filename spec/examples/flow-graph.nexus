@@ -32,11 +32,11 @@
 
 ;; Matches
 
-(Match (NodeQuery @name) Any)
-(Match (EdgeQuery 102 @to @kind) Any)
-(Match (EdgeQuery @from @to DependsOn) Any)
-(Match (GraphQuery "criome request flow" @nodes @edges @subgraphs) Any)
+(Match (NodeQuery (Bind)) Any)
+(Match (EdgeQuery 102 (Bind) (Bind)) Any)
+(Match (EdgeQuery (Bind) (Bind) DependsOn) Any)
+(Match (GraphQuery "criome request flow" (Bind) (Bind) (Bind)) Any)
 
 ;; Projection
 
-(Project (NodeQuery @name) (Fields [name]) Any)
+(Project (NodeQuery (Bind)) (Fields [name]) Any)
