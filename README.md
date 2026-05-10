@@ -1,16 +1,16 @@
 # nexus
 
-The nexus language: spec + translator daemon.
+Nexus is the typed semantic vocabulary over NOTA syntax, plus a
+translator daemon.
 
 ## What's here
 
-- `spec/grammar.md` — the nexus grammar spec
-  (text language design).
-- `spec/examples/` — illustrative `.nexus` files
-  showing the grammar in use.
-- `src/` — the daemon implementation. Parses nexus text via
-  the Nota grammar, builds
-  signal frames, dials
+- `spec/grammar.md` — the Nexus vocabulary/spec over NOTA syntax.
+- `spec/examples/` — illustrative examples showing explicit Nexus
+  request records.
+- `src/` — the daemon implementation. Parses NOTA text containing
+  Nexus records via nota-codec, builds
+  Signal frames, dials
   criome over UDS, serialises replies back to text.
 
 ## Architecture
@@ -23,16 +23,16 @@ ARCHITECTURE.md.
 
 ## Wire formats
 
-- **Client side** (UDS at `/tmp/nexus.sock`): pure **nexus text**
-  in / out. The parser self-delimits on matched parens; replies
-  pair to requests by **position** on the connection (FIFO).
+- **Client side** (UDS at `/tmp/nexus.sock`): NOTA text containing
+  Nexus records in / out. The parser self-delimits on matched parens;
+  replies pair to requests by **position** on the connection (FIFO).
 - **criome side** (UDS at `/tmp/criome.sock`):
-  `signal` rkyv frames
+  Signal rkyv frames
   carrying language IR.
 
-Nexus text is the only non-signal messaging surface in the
-sema-ecosystem. Once a request crosses the daemon, it is signal
-end-to-end.
+NOTA text containing Nexus records is the only non-Signal messaging
+surface in the sema-ecosystem. Once a request crosses the daemon, it
+is Signal end-to-end.
 
 ## License
 

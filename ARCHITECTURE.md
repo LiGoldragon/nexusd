@@ -1,14 +1,17 @@
 # ARCHITECTURE — nexus
 
-The nexus language: **spec + translator daemon** in one repo.
+Nexus is the workspace's typed semantic text vocabulary over NOTA
+syntax. This repo owns the Nexus vocabulary/spec and the translator
+daemon. It does not own a second parser or a second text syntax.
 
-1. `spec/grammar.md` — the canonical Nexus Tier 0 grammar spec.
-2. `spec/examples/` — canonical and illustrative `.nexus`
-   files showing explicit request records.
+1. `spec/grammar.md` — the canonical Nexus Tier 0 vocabulary/spec:
+   explicit verb records written in NOTA syntax.
+2. `spec/examples/` — canonical and illustrative files showing
+   explicit request records.
 3. `src/` — the daemon binary `nexus-daemon` plus the one-shot
    binaries `nexus-parse` and `nexus-render`. The daemon speaks
-   **nexus text** on the client side (UDS at
-   `/tmp/nexus.sock`) and **signal** (rkyv) on the criome side
+   **NOTA text containing Nexus records** on the client side (UDS at
+   `/tmp/nexus.sock`) and **Signal** (rkyv) on the criome side
    (UDS at `/tmp/criome.sock`); the one-shots are stdin/stdout
    wrappers around the same `Parser` / `Renderer` types for
    test pipelines and agent harnesses. Holds no sema state —
@@ -17,16 +20,16 @@ The nexus language: **spec + translator daemon** in one repo.
 ```
 client (nexus-cli, agents, editors, shell scripts)
    │
-   │ pure nexus text in / out
+   │ NOTA text containing Nexus records in / out
    │
    ▼
 ┌──────────┐
-│  nexus   │   parse text via nota-codec (Decoder::new)
-│ (daemon) │   build signal frames, send to criome
-│          │   receive signal replies, render to text via nota-codec (Encoder::new)
+│  nexus   │   parse NOTA via nota-codec (Decoder::new)
+│ (daemon) │   build Signal frames, send to criome
+│          │   receive Signal replies, render to text via nota-codec (Encoder::new)
 └────┬─────┘
      │
-     │ signal (rkyv envelope around per-verb typed payloads)
+     │ Signal (rkyv envelope around per-verb typed payloads)
      │
      ▼
    criome
@@ -36,17 +39,16 @@ client (nexus-cli, agents, editors, shell scripts)
 
 Owns (`[lib]` + `[[bin]]` split):
 
-- **The grammar spec** (under `spec/`). Stable;
-  changes coordinated with
-  nota-codec.
+- **The Nexus vocabulary/spec** (under `spec/`). It defines typed
+  request records over NOTA syntax.
 - **bin half** (`src/main.rs`): the daemon process — UDS
-  listener at `/tmp/nexus.sock`, parsing, signal connection
+  listener at `/tmp/nexus.sock`, parsing, Signal connection
   to criome, reply rendering.
 - **lib half** (`src/lib.rs` + `src/error.rs`): daemon-specific
   helpers — typed errors and (soon) connection-state types
   + a request-routing actor.
-- The **mechanical translation rule**: every nexus text
-  construct has exactly one signal form, and vice versa.
+- The **mechanical translation rule**: every Nexus record
+  construct has exactly one Signal form, and vice versa.
 
 Does not own:
 
@@ -56,10 +58,10 @@ Does not own:
   primitives is performed by the derives in
   nota-derive
   (`NotaRecord`, `NotaEnum`, `NotaTransparent`,
-  `NotaTryTransparent`, `NotaSum`) which signal types apply.
+  `NotaTryTransparent`, `NotaSum`) which Signal types apply.
   `PatternField<T>`, `(Bind)`, and `(Wildcard)` live in
   signal-core as ordinary typed records over Nota syntax.
-- The signal envelope and per-verb typed IR — lives in
+- The Signal envelope and per-verb typed IR — lives in
   signal.
 - Sema state — that's criome's exclusive concern.
 - The validator pipeline.
@@ -70,12 +72,12 @@ The nexus daemon is the *only* place where these meet:
 
 | Surface | Direction | Format | Contents |
 |---|---|---|---|
-| **client-facing** | client ↔ nexus | pure nexus text | the user's nexus expressions in / replies out |
-| **signal** | nexus ↔ criome | rkyv | language IR for the twelve verbs (`Assert`, `Subscribe`, `Constrain`, `Mutate`, `Match`, `Infer`, `Retract`, `Aggregate`, `Project`, `Atomic`, `Validate`, `Recurse`) |
+| **client-facing** | client ↔ nexus | NOTA syntax | Nexus request records in / reply records out |
+| **Signal** | nexus ↔ criome | rkyv | language IR for the twelve verbs (`Assert`, `Subscribe`, `Constrain`, `Mutate`, `Match`, `Infer`, `Retract`, `Aggregate`, `Project`, `Atomic`, `Validate`, `Recurse`) |
 
-Nexus text is the only non-signal messaging surface in the
-sema-ecosystem. It is transient — never persisted, never
-rendered outside this daemon.
+NOTA text containing Nexus records is the only non-Signal messaging
+surface in the sema-ecosystem. It is transient — never persisted,
+never rendered outside this daemon.
 
 ## Per-connection state
 
@@ -95,8 +97,8 @@ work is criome-state, fetched via `Match`). No sema cache.
 ```
 nexus/
 ├── spec/
-│   ├── grammar.md                — the canonical nexus grammar
-│   └── examples/                 — canonical and illustrative .nexus files
+│   ├── grammar.md                — the canonical Nexus vocabulary/spec
+│   └── examples/                 — canonical and illustrative examples
 └── src/
     ├── lib.rs                    — re-exports + supervision-tree doc
     ├── error.rs                  — typed daemon-process errors (incl. ActorCall, ActorSpawn)
@@ -132,7 +134,7 @@ state and a message protocol — see `lore/rust/ractor.md`.
 ## Invariants
 
 - **Text crosses only at this boundary.** All daemon-to-daemon
-  internal traffic is signal (rkyv). No raw nexus text reaches
+  internal traffic is Signal (rkyv). No raw NOTA text reaches
   criome.
 - **No state survives a request.** Per-connection state dies
   with the connection; durable state lives in criome's sema.
@@ -140,7 +142,7 @@ state and a message protocol — see `lore/rust/ractor.md`.
 - **One text construct, one typed value.** The mechanical
   translation rule is the perfect-specificity
   invariant
-  seen at the text↔signal boundary. Every nexus text construct
+  seen at the NOTA↔Signal boundary. Every Nexus record
   names exactly one typed shape; every typed shape has exactly
   one canonical text rendering. The daemon never instantiates
   a generic record and figures out its kind later — it parses
@@ -163,11 +165,11 @@ second concrete translator exists.
 
 ## What nexus-daemon does — and only that
 
-The nexus daemon does **one thing**: translate between nexus text
-and signal. In both directions. Nothing else.
+The nexus daemon does **one thing**: translate between NOTA text containing
+Nexus records and Signal. In both directions. Nothing else.
 
-- text in → signal out (parsing)
-- signal in → text out (rendering)
+- NOTA text in → Signal out (parsing)
+- Signal in → NOTA text out (rendering)
 
 It does not hold sema state. It does not validate beyond
 syntactic well-formedness. It does not remember anything across
@@ -180,16 +182,16 @@ This bright-line scope makes the daemon usable in two distinct
 roles, both reducing to the same translation primitive:
 
 - **Text-client gateway.** Humans, agents, shell scripts, and
-  LLM tools send nexus text to the daemon's UDS; the daemon
-  parses to signal, forwards to criome, renders the reply back
-  to text.
-- **Rendering service.** Other signal-speaking clients (mentci-*
-  GUIs being the first) speak signal directly to criome but
+  LLM tools send NOTA text containing Nexus records to the daemon's
+  UDS; the daemon parses to Signal, forwards to criome, and renders
+  the reply back to NOTA text.
+- **Rendering service.** Other Signal-speaking clients (mentci-*
+  GUIs being the first) speak Signal directly to criome but
   also hold a connection to the nexus daemon and use it to
-  render typed signal payloads as nexus text for human display
-  (inspector views, wire-pane frame display, hover labels). The
-  same daemon, the same primitive, used as a service rather
-  than a gateway.
+  render typed Signal payloads as NOTA text containing Nexus records
+  for human display (inspector views, wire-pane frame display, hover
+  labels). The same daemon, the same primitive, used as a service
+  rather than a gateway.
 
 In both roles the daemon is a translator. New clients do not
 extend nexus's scope — they consume the translation primitive
@@ -197,36 +199,36 @@ from whichever side they need.
 
 ## Clients connecting directly to criome
 
-Anything that wants to *talk to* criome speaks signal. The nexus
-daemon is one such speaker (forwarding the parsed signal from
+Anything that wants to *talk to* criome speaks Signal. The nexus
+daemon is one such speaker (forwarding the parsed Signal from
 its text clients). Others connect directly:
 
-- **mentci-* GUIs** — speak signal to criome for editing and
-  subscriptions; *additionally* speak signal to nexus-daemon for
+- **mentci-* GUIs** — speak Signal to criome for editing and
+  subscriptions; *additionally* speak Signal to nexus-daemon for
   rendering as described above.
-- **direct signal speakers** — agents written in Rust, CI
+- **direct Signal speakers** — agents written in Rust, CI
   harnesses, integration tests, any binary linking signal.
 
 Nexus is not a required intermediary for criome access; it is
 the text translation primitive that humans and rendering clients
 both consume.
 
-## Parser + renderer wire-in for new verbs
+## Parser + renderer wire-in
 
-Adding a new signal verb (the planned `Compile` / `BuildRequest`
-post-MVP, plus any future verb) lands in three places:
+Adding a new typed Nexus payload under the existing twelve verbs lands
+in three places:
 
-1. The verb's typed payload + closed-enum variant in
+1. The typed payload + closed-enum variant in
    signal.
 2. A new arm in [`Parser`](src/parser.rs) — verb-record dispatch from the
    PascalCase verb head to the typed payload.
 3. A new arm in [`Renderer`](src/renderer.rs) — typed reply →
-   nexus text, one canonical rendering per typed shape.
+   NOTA text, one canonical rendering per typed shape.
 
 The mechanical-translation rule (one text construct, one typed
-value) extends to every verb the daemon translates; new verbs
-slot into the parser/renderer per-variant dispatch without adding sigils or
-grammar slots.
+value) extends to every payload the daemon translates; new payloads
+slot into parser/renderer per-variant dispatch without adding sigils
+or grammar slots.
 
 ## Cross-cutting context
 

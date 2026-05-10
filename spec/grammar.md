@@ -1,8 +1,8 @@
 # nexus
 
-Nexus is a typed text format for Sema requests and replies. It mirrors rkyv in
-text: records and sequences carry the structure; Rust schema types carry the
-meaning.
+Nexus is a typed semantic vocabulary for Sema requests and replies, written in
+ordinary NOTA syntax. It mirrors rkyv in text: records and sequences carry the
+structure; Rust schema types carry the meaning.
 
 The core rule:
 
