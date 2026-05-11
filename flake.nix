@@ -1,5 +1,5 @@
 {
-  description = "The sema database daemon — receives nexus messages, applies edits, serves queries";
+  description = "Nexus semantic content vocabulary over NOTA syntax.";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";

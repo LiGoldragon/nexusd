@@ -6,7 +6,9 @@ You **MUST** read AGENTS.md at `github:ligoldragon/lore` — the workspace contr
 
 The **Nexus translator daemon** — parses NOTA text containing Nexus records into Signal frames for criome, then renders Signal replies back to NOTA text. `spec/grammar.md` is the canonical Nexus vocabulary/spec over NOTA syntax, not a separate text syntax.
 
-Ractor patterns (one actor per file, four-piece template, mailbox semantics, supervision) live in lore/rust/ractor.md.
+Actor patterns follow the workspace's Kameo discipline: data-bearing actor
+types, typed messages, mailbox semantics, and supervision live in
+`~/primary/skills/actor-systems.md` and `~/primary/skills/kameo.md`.
 
 ---
 

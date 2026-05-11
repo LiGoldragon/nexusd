@@ -130,13 +130,13 @@ Daemon (root)
         └── ...
 ```
 
-Per-actor file shape — each actor file exports `<Actor>` (ZST
-behaviour marker) + `State` + `Arguments` + `Message`. Parser,
-Renderer, and CriomeLink stay plain structs (single-owner,
-non-concurrent — they're stateless transformers / one-call-at-a-time
-sessions, not components warranting their own mailboxes). The
-ractor framework is the project default for components with
-state and a message protocol — see `lore/rust/ractor.md`.
+Per-actor file shape — each actor file owns a data-bearing actor type,
+its typed messages, and its lifecycle in one place. Parser, Renderer, and
+CriomeLink stay plain structs (single-owner, no concurrent state — they're
+stateless transformers / one-call-at-a-time sessions, not components
+warranting their own mailboxes). The workspace actor runtime is direct
+Kameo; any remaining Ractor implementation is legacy migration debt, not
+the pattern to copy.
 
 ## Invariants
 
