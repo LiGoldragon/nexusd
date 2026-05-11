@@ -4,6 +4,13 @@ Nexus is the workspace's typed semantic text vocabulary over NOTA
 syntax. This repo owns the Nexus vocabulary/spec and the translator
 daemon. It does not own a second parser or a second text syntax.
 
+> **Scope.** "criome" throughout this doc is today's `criome` daemon
+> (sema-ecosystem records validator). The eventual `Criome` is the
+> universal computing paradigm in Sema; at that point text↔record
+> translation is one operation inside the Sema substrate and nexus's
+> separate-translator role goes away. Today's nexus is a realization
+> step. See `~/primary/ESSENCE.md` §"Today and eventually".
+
 1. `spec/grammar.md` — the canonical Nexus Tier 0 vocabulary/spec:
    explicit verb records written in NOTA syntax.
 2. `spec/examples/` — canonical and illustrative files showing
