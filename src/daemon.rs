@@ -2,64 +2,67 @@
 //!
 //! Spawns the [`Listener`](crate::listener) at startup and
 //! holds its `ActorRef` for graceful-shutdown propagation.
-//! The Daemon itself receives no user messages — it only
-//! exists to own the supervision relationship and respond to
-//! a `Stop` request from `main` (e.g., on SIGTERM). Bring it
-//! up via `Actor::spawn(Some("daemon".into()), Daemon, args)`
-//! at the binary entry point — see `bin/main.rs`.
 
 use std::path::PathBuf;
 
-use ractor::{Actor, ActorProcessingErr, ActorRef};
+use kameo::actor::{Actor, ActorRef, Spawn, WeakActorRef};
+use kameo::error::ActorStopReason;
 
 use crate::listener;
+use crate::{Error, Result};
 
-pub struct Daemon;
-
-pub struct State {
-    pub listener: ActorRef<listener::Message>,
+pub struct Daemon {
+    listener: ActorRef<listener::Listener>,
 }
 
+#[derive(Debug, Clone)]
 pub struct Arguments {
     pub socket_path: PathBuf,
     pub criome_socket_path: PathBuf,
 }
 
-pub enum Message {}
+impl Daemon {
+    pub async fn start(arguments: Arguments) -> Result<ActorRef<Self>> {
+        let actor_reference = Self::spawn(arguments);
+        actor_reference
+            .wait_for_startup_with_result(|result| {
+                result.map_err(|error| Error::ActorSpawn(format!("daemon startup: {error:?}")))
+            })
+            .await?;
+        Ok(actor_reference)
+    }
+}
 
-#[ractor::async_trait]
 impl Actor for Daemon {
-    type Msg = Message;
-    type State = State;
-    type Arguments = Arguments;
+    type Args = Arguments;
+    type Error = Error;
 
-    async fn pre_start(
-        &self,
-        myself: ActorRef<Self::Msg>,
-        arguments: Arguments,
-    ) -> std::result::Result<Self::State, ActorProcessingErr> {
-        let (listener_ref, _) = Actor::spawn_linked(
-            Some("listener".into()),
-            listener::Listener,
+    async fn on_start(arguments: Self::Args, actor_reference: ActorRef<Self>) -> Result<Self> {
+        let listener = listener::Listener::spawn_link(
+            &actor_reference,
             listener::Arguments {
                 socket_path: arguments.socket_path,
                 criome_socket_path: arguments.criome_socket_path,
             },
-            myself.get_cell(),
         )
-        .await?;
+        .await;
 
-        Ok(State {
-            listener: listener_ref,
-        })
+        listener
+            .wait_for_startup_with_result(|result| {
+                result.map_err(|error| Error::ActorSpawn(format!("listener startup: {error:?}")))
+            })
+            .await?;
+
+        Ok(Self { listener })
     }
 
-    async fn handle(
-        &self,
-        _myself: ActorRef<Self::Msg>,
-        _message: Message,
-        _state: &mut State,
-    ) -> std::result::Result<(), ActorProcessingErr> {
+    async fn on_stop(
+        &mut self,
+        _actor_reference: WeakActorRef<Self>,
+        _reason: ActorStopReason,
+    ) -> Result<()> {
+        let _ = self.listener.stop_gracefully().await;
+        self.listener.wait_for_shutdown().await;
         Ok(())
     }
 }

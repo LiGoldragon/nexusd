@@ -2,7 +2,7 @@
 name         = "nexus"
 version      = "0.1.0"
 edition      = "2024"
-rust-version = "1.85"
+rust-version = "1.89"
 license      = "MIT OR Apache-2.0"
 repository   = "https://github.com/LiGoldragon/nexus"
 description  = "Nexus semantic content vocabulary written in NOTA syntax, with translator binaries for Signal frames."
@@ -26,6 +26,6 @@ path = "src/bin/render.rs"
 [dependencies]
 thiserror  = "2"
 tokio      = { version = "1", features = ["rt-multi-thread", "macros", "io-util", "net"] }
-ractor     = { version = "0.15", features = ["async-trait"] }
+kameo      = { version = "0.20", default-features = false, features = ["macros", "tracing"] }
 signal     = { git = "https://github.com/LiGoldragon/signal.git", branch = "main" }
 nota-codec = { git = "https://github.com/LiGoldragon/nota-codec.git", branch = "main" }

@@ -34,14 +34,14 @@ pub enum Error {
     #[error("nexus verb `{verb}` is not in the current compatibility parser scope")]
     VerbNotInM0Scope { verb: &'static str },
 
-    /// A ractor `call` failed (timeout, sender dropped). Carries
-    /// a free-form detail string so the caller can log; the
+    /// An actor message failed (timeout, sender dropped, actor stopped).
+    /// Carries a free-form detail string so the caller can log; the
     /// connection actor's shuttle maps these to text-rendered
     /// `(Diagnostic …)` replies.
     #[error("actor call: {0}")]
     ActorCall(String),
 
-    /// `Actor::spawn` failed during daemon startup.
+    /// Actor startup failed during daemon startup.
     #[error("actor spawn: {0}")]
     ActorSpawn(String),
 }

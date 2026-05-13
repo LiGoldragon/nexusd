@@ -115,7 +115,7 @@ nexus/
     ├── criome_link.rs            — CriomeLink struct: post-handshake signal connection (single-owner, not an actor)
     ├── parser.rs                 — Parser struct: current Criome parser; awaiting Tier 0 verb-record rewrite
     ├── renderer.rs               — Renderer struct: signal::Reply → Tier 0 text
-    ├── main.rs                   — nexus-daemon entry: env config, Actor::spawn root Daemon, await join handle
+    ├── main.rs                   — nexus-daemon entry: env config, start Kameo root Daemon, await shutdown
     └── bin/
         ├── parse.rs              — nexus-parse: stdin text → length-prefixed Frame on stdout
         └── render.rs             — nexus-render: length-prefixed Frame on stdin → text on stdout
@@ -135,8 +135,7 @@ its typed messages, and its lifecycle in one place. Parser, Renderer, and
 CriomeLink stay plain structs (single-owner, no concurrent state — they're
 stateless transformers / one-call-at-a-time sessions, not components
 warranting their own mailboxes). The workspace actor runtime is direct
-Kameo; any remaining Ractor implementation is legacy migration debt, not
-the pattern to copy.
+Kameo.
 
 ## Invariants
 

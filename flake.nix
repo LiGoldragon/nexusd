@@ -11,8 +11,16 @@
     crane.url = "github:ipetkov/crane";
   };
 
-  outputs = { self, nixpkgs, flake-utils, fenix, crane }:
-    flake-utils.lib.eachDefaultSystem (system:
+  outputs =
+    {
+      self,
+      nixpkgs,
+      flake-utils,
+      fenix,
+      crane,
+    }:
+    flake-utils.lib.eachDefaultSystem (
+      system:
       let
         pkgs = import nixpkgs { inherit system; };
         toolchain = fenix.packages.${system}.fromToolchainFile {
@@ -28,13 +36,27 @@
         cargoArtifacts = craneLib.buildDepsOnly commonArgs;
       in
       {
-        packages.default = craneLib.buildPackage (commonArgs // {
-          inherit cargoArtifacts;
-        });
+        packages.default = craneLib.buildPackage (
+          commonArgs
+          // {
+            inherit cargoArtifacts;
+          }
+        );
 
-        checks.default = craneLib.cargoTest (commonArgs // {
-          inherit cargoArtifacts;
-        });
+        checks = {
+          default = craneLib.cargoTest (
+            commonArgs
+            // {
+              inherit cargoArtifacts;
+            }
+          );
+          nexus-uses-current-actor-runtime = pkgs.runCommand "nexus-uses-current-actor-runtime" { } ''
+            retired_actor_runtime="$(printf '%s%s' rac tor)"
+            ${pkgs.gnugrep}/bin/grep -R -Fq 'kameo' ${./Cargo.toml} ${./src}
+            ! ${pkgs.gnugrep}/bin/grep -R -E "(^|[^[:alnum:]_])$retired_actor_runtime([^[:alnum:]_]|$)" ${./Cargo.toml} ${./src}
+            touch $out
+          '';
+        };
 
         devShells.default = pkgs.mkShell {
           name = "nexus";
