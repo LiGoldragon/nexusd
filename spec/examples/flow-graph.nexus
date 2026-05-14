@@ -37,6 +37,6 @@
 (Match (EdgeQuery (Bind) (Bind) DependsOn) Any)
 (Match (GraphQuery "criome request flow" (Bind) (Bind) (Bind)) Any)
 
-;; Projection
+;; Projection read plan
 
-(Project (NodeQuery (Bind)) (Fields [name]) Any)
+(Match (Project (NodeQuery (Bind)) (Fields [name])) Any)

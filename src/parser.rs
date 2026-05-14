@@ -1,11 +1,11 @@
 //! `Parser` — nexus text → [`signal::Request`].
 //!
 //! This is the current Criome-specific parser. It still accepts only the
-//! pre-renovation Assert surface while `signal` is moved to the twelve-verb
-//! contract. The Tier 0 target in `spec/grammar.md` is explicit verb-record
+//! pre-renovation Assert surface while `signal` is moved to the seven-root
+//! contract. The Tier 0 target in `spec/grammar.md` is explicit root-record
 //! dispatch: `(Assert ...)`, `(Match ...)`, `(Subscribe ...)`, and so on.
 //!
-//! Until the signal boundary is rebased onto the twelve-verb contract, this
+//! Until the signal boundary is rebased onto the seven-root contract, this
 //! parser remains a compatibility adapter. Retired Nexus sigils and piped
 //! delimiters are not tokenized by nota-codec anymore, so this parser does not
 //! preserve the old `(| ... |)` query form.

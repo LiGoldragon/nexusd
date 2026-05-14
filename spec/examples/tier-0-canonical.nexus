@@ -33,20 +33,23 @@
 (Validate (Assert (Node "dry run")))
 
 ;; ------------------------------------------------------------------
-;; Reductions and composition
+;; Read-plan payloads
 ;; ------------------------------------------------------------------
 
-(Aggregate (NodeQuery (Bind)) Count)
-(Project (NodeQuery (Bind)) (Fields [name]) Any)
+(Match (Aggregate (NodeQuery (Bind)) Count) Any)
+(Match (Project (NodeQuery (Bind)) (Fields [name])) Any)
 
-(Constrain
-  [(EdgeQuery 100 (Bind) Flow)
-   (NodeQuery (Bind))]
-  (Unify [to])
+(Match
+  (Constrain
+    [(EdgeQuery 100 (Bind) Flow)
+     (NodeQuery (Bind))]
+    (Unify [to]))
   Any)
 
-(Infer (NodeQuery (Bind)) StandardOntology)
-(Recurse (NodeQuery (Bind)) (EdgeQuery (Bind) (Bind) DependsOn) Fixpoint)
+(Match (Infer (NodeQuery (Bind)) StandardOntology) Any)
+(Match
+  (Recurse (NodeQuery (Bind)) (EdgeQuery (Bind) (Bind) DependsOn) Fixpoint)
+  Any)
 
 ;; ------------------------------------------------------------------
 ;; Replies

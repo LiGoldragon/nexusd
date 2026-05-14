@@ -11,8 +11,9 @@ The core rule:
 
 Nexus is not an expression language. It has no operators, no function calls,
 and no special delimiter for query forms. A top-level request is always one of
-the twelve closed Sema/Nexus verb records. Payload records such as `NodeQuery`
-may appear inside those verbs, but they are not standalone messages.
+the seven closed Signal/Nexus root verb records. Payload records such as
+`NodeQuery`, `Project`, or `Constrain` may appear inside those verbs, but they
+are not standalone messages.
 
 ---
 
@@ -145,34 +146,38 @@ non-pattern value.
 
 ## 5 · Requests
 
-Every top-level request is a verb record. Tier 0 uses fully explicit request
-heads; a bare top-level domain record is not an implicit assert.
+Every top-level request is a root verb record. Tier 0 uses fully explicit
+request heads; a bare top-level domain record is not an implicit assert.
 
-The twelve verb heads are:
+The seven root verb heads are:
 
 ```text
-Assert Subscribe Constrain Mutate Match Infer
-Retract Aggregate Project Atomic Validate Recurse
+Assert Mutate Retract Match Subscribe Atomic Validate
 ```
 
-`Query` is not a verb. Query-like payload names may exist in Rust schemas
-(`NodeQuery`, `MatchQuery`, and similar), but the public text starts with the
-verb that owns the behavior.
+`Query` is not a root verb. Read-algebra names such as `Constrain`, `Project`,
+`Aggregate`, `Infer`, and `Recurse` are also not root verbs. They are typed
+payload records inside the root that owns the behavior, usually `Match`,
+`Subscribe`, or `Validate`.
 
 ```rust
 pub enum Request {
     Assert(AssertOperation),
-    Subscribe(SubscribeQuery),
-    Constrain(ConstrainQuery),
     Mutate(MutateOperation),
-    Match(MatchQuery),
-    Infer(InferQuery),
     Retract(RetractOperation),
-    Aggregate(AggregateQuery),
-    Project(ProjectQuery),
+    Match(ReadPlan, Cardinality),
+    Subscribe(ReadPlan, SubscriptionMode, Backpressure),
     Atomic(AtomicOperation),
     Validate(ValidateRequest),
-    Recurse(RecurseQuery),
+}
+
+pub enum ReadPlan {
+    Pattern(PatternQuery),
+    Constrain(ConstrainPlan),
+    Project(ProjectPlan),
+    Aggregate(AggregatePlan),
+    Infer(InferPlan),
+    Recurse(RecursePlan),
 }
 ```
 
@@ -191,11 +196,15 @@ Examples:
 (Subscribe (NodeQuery (Bind)) ImmediateExtension Block)
 (Validate (Assert (Node "dry run")))
 
-(Aggregate (NodeQuery (Bind)) Count)
-(Project (NodeQuery (Bind)) (Fields [name]) Any)
-(Constrain [(EdgeQuery 100 (Bind) Flow) (NodeQuery (Bind))] (Unify [to]) Any)
-(Infer (NodeQuery (Bind)) StandardOntology)
-(Recurse (NodeQuery (Bind)) (EdgeQuery (Bind) (Bind) DependsOn) Fixpoint)
+(Match (Aggregate (NodeQuery (Bind)) Count) Any)
+(Match (Project (NodeQuery (Bind)) (Fields [name])) Any)
+(Match
+  (Constrain [(EdgeQuery 100 (Bind) Flow) (NodeQuery (Bind))] (Unify [to]))
+  Any)
+(Match (Infer (NodeQuery (Bind)) StandardOntology) Any)
+(Match
+  (Recurse (NodeQuery (Bind)) (EdgeQuery (Bind) (Bind) DependsOn) Fixpoint)
+  Any)
 ```
 
 Slot references are bare integers in slot-typed positions. The schema tells the
@@ -236,8 +245,8 @@ new examples or new parser work.
 |---|---|
 | `(| Node @name |)` | `(Match (NodeQuery (Bind)) Any)` |
 | `[| op1 op2 |]` | `(Atomic [op1 op2])` |
-| `{ name }` | `(Project pattern (Fields [name]) cardinality)` |
-| `{| pat1 pat2 |}` | `(Constrain [pat1 pat2] (Unify [name]) cardinality)` |
+| `{ name }` | `(Match (Project pattern (Fields [name])) cardinality)` |
+| `{| pat1 pat2 |}` | `(Match (Constrain [pat1 pat2] (Unify [name])) cardinality)` |
 | `~record` | `(Mutate slot record)` |
 | `!record` | `(Retract Kind slot)` |
 | `?record` | `(Validate request)` |

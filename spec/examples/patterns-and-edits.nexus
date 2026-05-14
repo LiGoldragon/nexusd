@@ -1,7 +1,7 @@
 ;; patterns-and-edits.nexus
 ;;
 ;; Tier 0 examples for bind, wildcard, mutate, retract, validate,
-;; subscribe, constrain, and atomic requests.
+;; subscribe, read plans, and atomic requests.
 
 ;; Bind positions are typed records.
 
@@ -32,17 +32,21 @@
 
 (Subscribe (NodeQuery (Bind)) ImmediateExtension Block)
 
-;; Constrain composes multiple patterns and names the bind set that must unify.
+;; Constrain is a read-plan payload that composes multiple patterns and names
+;; the bind set that must unify.
 
-(Constrain
-  [(EdgeQuery (Bind) (Bind) DependsOn)
-   (NodeQuery (Bind))]
-  (Unify [to])
+(Match
+  (Constrain
+    [(EdgeQuery (Bind) (Bind) DependsOn)
+     (NodeQuery (Bind))]
+    (Unify [to]))
   Any)
 
-;; Projection selects fields from a matched shape.
+;; Projection is a read-plan payload that selects fields from a matched shape.
 
-(Project (EdgeQuery (Bind) (Bind) (Bind)) (Fields [from to kind]) Any)
+(Match
+  (Project (EdgeQuery (Bind) (Bind) (Bind)) (Fields [from to kind]))
+  Any)
 
 ;; Atomic bundles requests as all-or-nothing state change.
 
