@@ -80,7 +80,7 @@ The nexus daemon is the *only* place where these meet:
 | Surface | Direction | Format | Contents |
 |---|---|---|---|
 | **client-facing** | client ↔ nexus | NOTA syntax | Nexus request records in / reply records out |
-| **Signal** | nexus ↔ criome | rkyv | language IR for the seven root verbs (`Assert`, `Mutate`, `Retract`, `Match`, `Subscribe`, `Atomic`, `Validate`) per `~/primary/reports/designer-assistant/50-signal-core-base-verb-shape.md` and `~/primary/reports/designer/162-signal-verb-roots-synthesis.md`. Read-algebra (`Constrain`, `Project`, `Aggregate`, `Infer`, `Recurse`) appears inside `Match`/`Subscribe`/`Validate` payloads via `sema-engine`'s `ReadPlan`, never as a root. |
+| **Signal** | nexus ↔ criome | rkyv | language IR for the seven root verbs (`Assert`, `Mutate`, `Retract`, `Match`, `Subscribe`, `Atomic`, `Validate`). Read-algebra (`Constrain`, `Project`, `Aggregate`, `Infer`, `Recurse`) appears inside `Match`/`Subscribe`/`Validate` payloads via `sema-engine`'s `ReadPlan`, never as a root. |
 
 NOTA text containing Nexus records is the only non-Signal messaging
 surface in the sema-ecosystem. It is transient — never persisted,
