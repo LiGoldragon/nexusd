@@ -80,7 +80,7 @@ The nexus daemon is the *only* place where these meet:
 | Surface | Direction | Format | Contents |
 |---|---|---|---|
 | **client-facing** | client ↔ nexus | NOTA syntax | Nexus request records in / reply records out |
-| **Signal** | nexus ↔ criome | rkyv | language IR for the twelve verbs (`Assert`, `Subscribe`, `Constrain`, `Mutate`, `Match`, `Infer`, `Retract`, `Aggregate`, `Project`, `Atomic`, `Validate`, `Recurse`) |
+| **Signal** | nexus ↔ criome | rkyv | language IR for the seven root verbs (`Assert`, `Mutate`, `Retract`, `Match`, `Subscribe`, `Atomic`, `Validate`) per `~/primary/reports/designer-assistant/50-signal-core-base-verb-shape.md` and `~/primary/reports/designer/162-signal-verb-roots-synthesis.md`. Read-algebra (`Constrain`, `Project`, `Aggregate`, `Infer`, `Recurse`) appears inside `Match`/`Subscribe`/`Validate` payloads via `sema-engine`'s `ReadPlan`, never as a root. |
 
 NOTA text containing Nexus records is the only non-Signal messaging
 surface in the sema-ecosystem. It is transient — never persisted,
@@ -166,7 +166,7 @@ sequences, explicit request records, and schema-driven `PatternField<T>`
 decoding through ordinary `(Bind)` and `(Wildcard)` records. The renderer now
 emits named `SlotBinding` records for slotted query replies. The current parser
 still carries the previous Criome-specific M0 surface until `signal` is rebased
-onto the twelve-verb contract. Domain-parameterizing the daemon waits until a
+onto the seven-root contract. Domain-parameterizing the daemon waits until a
 second concrete translator exists.
 
 ## What nexus-daemon does — and only that
@@ -221,7 +221,7 @@ both consume.
 
 ## Parser + renderer wire-in
 
-Adding a new typed Nexus payload under the existing twelve verbs lands
+Adding a new typed Nexus payload under the existing seven root verbs lands
 in three places:
 
 1. The typed payload + closed-enum variant in
