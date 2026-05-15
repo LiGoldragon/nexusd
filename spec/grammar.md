@@ -11,7 +11,8 @@ The core rule:
 
 Nexus is not an expression language. It has no operators, no function calls,
 and no special delimiter for query forms. A top-level request is always one of
-the seven closed Signal/Nexus root verb records. Payload records such as
+the six closed Signal/Nexus root verb records, or a sequence of such records
+forming an atomic multi-operation request. Payload records such as
 `NodeQuery`, `Project`, or `Constrain` may appear inside those verbs, but they
 are not standalone messages.
 
@@ -149,11 +150,16 @@ non-pattern value.
 Every top-level request is a root verb record. Tier 0 uses fully explicit
 request heads; a bare top-level domain record is not an implicit assert.
 
-The seven root verb heads are:
+The six root verb heads are:
 
 ```text
-Assert Mutate Retract Match Subscribe Atomic Validate
+Assert Mutate Retract Match Subscribe Validate
 ```
+
+`Atomic` is not a verb. Multi-operation atomic requests are written as a
+top-level sequence of root-verb records — the sequence itself is the atomic
+unit, mapping directly to `signal-core::Request<Payload>` carrying
+`NonEmpty<Operation<Payload>>`.
 
 `Query` is not a root verb. Read-algebra names such as `Constrain`, `Project`,
 `Aggregate`, `Infer`, and `Recurse` are also not root verbs. They are typed
@@ -161,14 +167,20 @@ payload records inside the root that owns the behavior, usually `Match`,
 `Subscribe`, or `Validate`.
 
 ```rust
-pub enum Request {
+pub enum Operation {
     Assert(AssertOperation),
     Mutate(MutateOperation),
     Retract(RetractOperation),
     Match(ReadPlan, Cardinality),
     Subscribe(ReadPlan, SubscriptionMode, Backpressure),
-    Atomic(AtomicOperation),
     Validate(ValidateRequest),
+}
+
+// A top-level Nexus request is a NonEmpty sequence of Operations.
+// Single-op requests render as one verb record; multi-op requests
+// render as a top-level sequence of verb records.
+pub struct Request {
+    pub operations: NonEmpty<Operation>,
 }
 
 pub enum ReadPlan {
@@ -189,7 +201,10 @@ Examples:
 
 (Mutate 100 (Node "renamed"))
 (Retract Node 100)
-(Atomic [(Assert (Node A)) (Assert (Node B))])
+
+;; Multi-operation atomic request — top-level sequence of verb records.
+[(Assert (Node A)) (Assert (Node B))]
+[(Retract (RoleClaim Designer)) (Assert (RoleClaim Poet))]
 
 (Match (NodeQuery (Bind)) Any)
 (Match (EdgeQuery 100 (Bind) Flow) (Limit 10))
@@ -244,7 +259,7 @@ new examples or new parser work.
 | Dropped form | Replacement |
 |---|---|
 | `(| Node @name |)` | `(Match (NodeQuery (Bind)) Any)` |
-| `[| op1 op2 |]` | `(Atomic [op1 op2])` |
+| `[| op1 op2 |]` | `[op1 op2]` — a top-level NonEmpty sequence of verb records is the atomic unit |
 | `{ name }` | `(Match (Project pattern (Fields [name])) cardinality)` |
 | `{| pat1 pat2 |}` | `(Match (Constrain [pat1 pat2] (Unify [name])) cardinality)` |
 | `~record` | `(Mutate slot record)` |
